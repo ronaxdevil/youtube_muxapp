@@ -18,6 +18,7 @@ source $controlfolder/control.txt
 get_controls
 [ -f "${controlfolder}/mod_${CFW_NAME}.txt" ] && source "${controlfolder}/mod_${CFW_NAME}.txt"
 
+
 # --- 2. Exports & Library Setup ---
 export LD_LIBRARY_PATH="$controlfolder/libs:$controlfolder/utils/lib:$LD_LIBRARY_PATH"
 export PYTHONPATH="$controlfolder/exlibs:$controlfolder/pylibs:$controlfolder/libs:$PYTHONPATH"
@@ -30,6 +31,8 @@ GAMEDIR="/$directory/MUOS/application/Youtube/youtube"
 # --- 4. Move into the directory ---
 cd "$GAMEDIR"
 
+> "$GAMEDIR/log.txt" && exec > >(tee "$GAMEDIR/log.txt") 2>&1
+
 # [TEXT FIX] Force system to look for fonts in the game folder
 export XDG_DATA_DIRS="$GAMEDIR:$controlfolder:$XDG_DATA_DIRS"
 
@@ -38,8 +41,13 @@ $ESUDO chmod 666 /dev/tty0
 export TERM=linux
 printf "\033c" > /dev/tty0
 
+# Logging
+echo "Starting YouTube..."
+echo "PortMaster found at: $controlfolder"
+echo "Running in directory: $(pwd)"
+
 # YouTube uygulamasını başlat
-$ESUDO python3 youtube.py > "$GAMEDIR/log.txt" 2>&1
+$ESUDO python3 youtube.py
 
 # Cleanup
 printf "\033c" > /dev/tty0
