@@ -18,17 +18,17 @@ source $controlfolder/control.txt
 get_controls
 [ -f "${controlfolder}/mod_${CFW_NAME}.txt" ] && source "${controlfolder}/mod_${CFW_NAME}.txt"
 
-# --- 2. Directory Setup ---
-GAMEDIR="/$directory/MUOS/Applications/Youtube/youtube"
-
-# --- 3. Move into the directory ---
-cd "$GAMEDIR"
-
-# --- 4. Exports & Library Setup ---
+# --- 2. Exports & Library Setup ---
 export LD_LIBRARY_PATH="$controlfolder/libs:$controlfolder/utils/lib:$LD_LIBRARY_PATH"
 export PYTHONPATH="$controlfolder/exlibs:$controlfolder/pylibs:$controlfolder/libs:$PYTHONPATH"
 export PYSDL2_DLL_PATH="$controlfolder/libs"
 export PATH="$GAMEDIR:$PATH"
+
+# --- 3. Directory Setup ---
+GAMEDIR="/$directory/MUOS/application/Youtube/youtube"
+
+# --- 4. Move into the directory ---
+cd "$GAMEDIR"
 
 # [TEXT FIX] Force system to look for fonts in the game folder
 export XDG_DATA_DIRS="$GAMEDIR:$controlfolder:$XDG_DATA_DIRS"
