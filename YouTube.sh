@@ -30,6 +30,9 @@ export PYTHONPATH="$controlfolder/exlibs:$controlfolder/pylibs:$controlfolder/li
 export PYSDL2_DLL_PATH="$controlfolder/libs"
 export PATH="$GAMEDIR:$PATH"
 
+# [TEXT FIX] Force system to look for fonts in the game folder
+export XDG_DATA_DIRS="$GAMEDIR:$controlfolder:$XDG_DATA_DIRS"
+
 # Terminal settings
 $ESUDO chmod 666 /dev/tty0
 export TERM=linux
