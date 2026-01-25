@@ -374,7 +374,19 @@ class YouTubeApp:
         
         def worker():
             try:
-                cmd = [self.ytdlp_path, query, "--flat-playlist", "--dump-json", "--no-warnings", "--ignore-errors", "--no-check-certificates", "--extractor-args", "youtube:skip=dash,hls", "--socket-timeout", "15"]
+                # Force H.264 (MP4) to prevent crashes on non-VP9 devices
+                cmd = [
+                    self.ytdlp_path, 
+                    "-f", "best[height<=480][ext=mp4]/best[height<=480]", 
+                    query, 
+                    "--flat-playlist", 
+                    "--dump-json", 
+                    "--no-warnings", 
+                    "--ignore-errors", 
+                    "--no-check-certificates", 
+                    "--extractor-args", "youtube:skip=dash,hls;youtube:player_client=android", 
+                    "--socket-timeout", "15"
+                ]
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
                 for line in result.stdout.strip().split('\n'):
                     if line.strip():
@@ -566,7 +578,17 @@ class YouTubeApp:
         
         def worker():
             try:
-                cmd = [self.ytdlp_path, "-f", f"best[height<={height}]/best", "-g", "--no-warnings", "--no-check-certificates", "--no-playlist", video.url]
+                # Force H.264 (MP4) to prevent crashes on non-VP9 devices
+                cmd = [
+                    self.ytdlp_path, 
+                    "-f", f"best[height<={height}][ext=mp4]/best[height<={height}]", 
+                    "-g", 
+                    "--no-warnings", 
+                    "--no-check-certificates", 
+                    "--no-playlist", 
+                    "--extractor-args", "youtube:player_client=android", 
+                    video.url
+                ]
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
                 if result.returncode != 0:
                     self.status, self.status_type, self.is_loading_video, self.need_redraw = "Failed to get URL", "error", False, True
