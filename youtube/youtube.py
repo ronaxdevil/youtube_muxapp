@@ -596,9 +596,13 @@ class YouTubeApp:
                 
                 env = os.environ.copy()
                 if 'DISPLAY' not in env: env['DISPLAY'] = ':0'
-                self.player_process = subprocess.Popen(player_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, env=env)
+                
+                # FIX: Use local variable first to avoid race condition
+                proc = subprocess.Popen(player_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, env=env)
+                self.player_process = proc
+                
                 last_button_check = time.time()
-                while self.player_process.poll() is None:
+                while proc.poll() is None:
                     if self.controller and (time.time() - last_button_check > 0.15):
                         SDL_GameControllerUpdate()
                         dpad_up = SDL_GameControllerGetButton(self.controller, SDL_CONTROLLER_BUTTON_DPAD_UP)
