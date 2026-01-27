@@ -3,22 +3,22 @@
 # ICON: mutube
 # GRID: MuTube
 
-. /opt/muos/script/var/func.sh
 
-# Define global variables
-SCREEN_WIDTH=$(GET_VAR device mux/width)
-SCREEN_HEIGHT=$(GET_VAR device mux/height)
-
-if [ "$SCREEN_WIDTH" == "720" ] && [ "$SCREEN_HEIGHT" == "480" ]; then
-  # RG34XX SP / Plus / H
-  APP_FILE="yt_32.py"
-elif [ "$SCREEN_WIDTH" == "640" ] && [ "$SCREEN_HEIGHT" == "480" ]; then
-  # RG35XX SP / OG / Plus
-  APP_FILE="yt_43.py"
+# --- 1. Get Resolution from MUOS ---
+if [ -f /opt/muos/script/var/func.sh ]; then
+  . /opt/muos/script/var/func.sh
+  WIDTH=$(GET_VAR device mux/width)
+  HEIGHT=$(GET_VAR device mux/height)
 else
-  # Fallback for default screens (e.g. 720x720)
-  APP_FILE="yt_11.py"
+  # Fallback
+  WIDTH=640
+  HEIGHT=480
 fi
+
+# --- 2. Push Resolution to Python ---
+# We export these so youtube.py can read them
+export APP_SCREEN_WIDTH="$WIDTH"
+export APP_SCREEN_HEIGHT="$HEIGHT"
 
 # ---  Directory Setup ---
 DIR="$(dirname "$0")"
@@ -67,7 +67,7 @@ echo "PortMaster found at: $controlfolder"
 echo "Running in directory: $(pwd)"
 
 # Launch the application
-$ESUDO python3 "$APP_FILE"
+$ESUDO python3 youtube.py
 
 # Cleanup
 printf "\033c" > /dev/tty0

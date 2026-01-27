@@ -7,6 +7,7 @@ import time
 import hashlib
 import urllib.request
 import ssl
+import ctypes
 from datetime import datetime
 
 # --- Setup Paths ---
@@ -27,8 +28,9 @@ except ImportError as e:
     print(f"SDL2 Error: {e}")
     sys.exit(1)
 
-SCREEN_WIDTH = 720
-SCREEN_HEIGHT = 720
+# Default values for resolution
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
 ssl._create_default_https_context = ssl._create_unverified_context
 
 class Colors:
@@ -76,7 +78,6 @@ TRANSLATIONS = {
         "exit_confirm_title": "Are you sure you want to exit?", "exit_confirm_yes": "Yes",
         "exit_confirm_no": "No", "exit_confirm_help": "[<>] Select [A] Confirm [B] Cancel",
     },
-    # Other languages omitted for brevity (they default to English if missing)
 }
 
 LANGUAGES = ["English", "Turkce", "Espanol", "Portugues", "Deutsch", "Francais", "Russian", "Ukrainian"]
@@ -162,6 +163,24 @@ class YouTubeApp:
     def __init__(self):
         SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER)
         ttf.TTF_Init()
+
+        global SCREEN_WIDTH, SCREEN_HEIGHT
+        if "APP_SCREEN_WIDTH" in os.environ and "APP_SCREEN_HEIGHT" in os.environ:
+            SCREEN_WIDTH = int(os.environ["APP_SCREEN_WIDTH"])
+            SCREEN_HEIGHT = int(os.environ["APP_SCREEN_HEIGHT"])
+            print(f"Using Script Resolution: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+
+        else:
+            display_mode = SDL_DisplayMode()
+            if SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode)) == 0:
+                SCREEN_WIDTH = display_mode.w
+                SCREEN_HEIGHT = display_mode.h
+                print(f"Auto-Detected Resolution: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+            else:
+                SCREEN_WIDTH = 640
+                SCREEN_HEIGHT = 480
+                print("Resolution detect failed, using 640x480")
+
         self.window = SDL_CreateWindow(b"YouTube", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN)
         self.renderer = SDL_CreateRenderer(self.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
         SDL_SetRenderDrawBlendMode(self.renderer, SDL_BLENDMODE_BLEND)
@@ -578,7 +597,6 @@ class YouTubeApp:
         
         def worker():
             try:
-                # Force H.264 (MP4) to prevent crashes on non-VP9 devices
                 cmd = [
                     self.ytdlp_path, 
                     "-f", f"best[height<={height}][ext=mp4]/best[height<={height}]", 
@@ -658,6 +676,25 @@ class YouTubeApp:
             sock.close()
             return True
         except: return False
+
+    def get_mpv_property(self, prop):
+        if not self.is_playing or not hasattr(self, 'mpv_socket') or not self.mpv_socket: return "?"
+        try:
+            import socket
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(0.2)
+            sock.connect(self.mpv_socket)
+            cmd = {"command": ["get_property", prop]}
+            sock.send((json.dumps(cmd) + "\n").encode())
+            data = sock.recv(4096).decode()
+            sock.close()
+            for line in data.split('\n'):
+                if line.strip():
+                    resp = json.loads(line)
+                    if "data" in resp:
+                        return str(resp["data"])
+            return "?"
+        except: return "?"
 
     def player_seek(self, seconds):
         if self.is_playing: self.send_mpv_command(["seek", str(seconds), "relative"])
@@ -1255,6 +1292,16 @@ class YouTubeApp:
                 elif btn == SDL_CONTROLLER_BUTTON_Y: self.player_toggle_pause()
                 elif btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER: self.player_seek(-10)
                 elif btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: self.player_seek(10)
+                elif btn == SDL_CONTROLLER_BUTTON_X:
+                    wv = self.get_mpv_property("width")
+                    hv = self.get_mpv_property("height")
+                    fmt = self.get_mpv_property("video-format")
+                    
+                    if wv != "?" and hv != "?":
+                        msg = f"Res: {wv}x{hv} ({fmt})"
+                        self.send_mpv_command(["show-text", msg, "3000"])
+                    else:
+                        self.send_mpv_command(["script-binding", "stats/display-stats-toggle"])
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_LEFT: self.player_seek(-5)
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_RIGHT: self.player_seek(5)
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_UP: self.player_brightness(5)
@@ -1402,6 +1449,21 @@ if __name__ == "__main__":
     print(f"Script dir: {SCRIPT_DIR}")
     print(f"yt-dlp: {YTDLP_PATH}")
     print(f"Player: {VIDEO_PLAYER}")
+
+    if "APP_SCREEN_WIDTH" in os.environ:
+        try:
+            SCREEN_WIDTH = int(os.environ["APP_SCREEN_WIDTH"])
+            print(f"Overriding SCREEN_WIDTH from env: {SCREEN_WIDTH}")
+        except ValueError:
+            print(f"Invalid APP_SCREEN_WIDTH in env: {os.environ['APP_SCREEN_WIDTH']}")
+
+    if "APP_SCREEN_HEIGHT" in os.environ:
+        try:
+            SCREEN_HEIGHT = int(os.environ["APP_SCREEN_HEIGHT"])
+            print(f"Overriding SCREEN_HEIGHT from env: {SCREEN_HEIGHT}")
+        except ValueError:
+            print(f"Invalid APP_SCREEN_HEIGHT in env: {os.environ['APP_SCREEN_HEIGHT']}")
+
     try:
         app = YouTubeApp()
         app.run()
