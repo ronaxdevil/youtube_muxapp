@@ -1,5 +1,28 @@
 #!/bin/bash
-# YouTube App - PortMaster Launch Script
+# HELP: MuTube
+# ICON: mutube
+# GRID: MuTube
+
+. /opt/muos/script/var/func.sh
+
+# Define global variables
+SCREEN_WIDTH=$(GET_VAR device mux/width)
+SCREEN_HEIGHT=$(GET_VAR device mux/height)
+
+if [ "$SCREEN_WIDTH" == "720" ] && [ "$SCREEN_HEIGHT" == "480" ]; then
+  # RG34XX SP / Plus / H
+  APP_FILE="yt_32.py"
+elif [ "$SCREEN_WIDTH" == "640" ] && [ "$SCREEN_HEIGHT" == "480" ]; then
+  # RG35XX SP / OG / Plus
+  APP_FILE="yt_43.py"
+else
+  # Fallback for default screens (e.g. 720x720)
+  APP_FILE="yt_11.py"
+fi
+
+# ---  Directory Setup ---
+DIR="$(dirname "$0")"
+DATADIR="$DIR/data"
 
 # --- 1. PortMaster Detection ---
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
@@ -23,18 +46,15 @@ get_controls
 export LD_LIBRARY_PATH="$controlfolder/libs:$controlfolder/utils/lib:$LD_LIBRARY_PATH"
 export PYTHONPATH="$controlfolder/exlibs:$controlfolder/pylibs:$controlfolder/libs:$PYTHONPATH"
 export PYSDL2_DLL_PATH="$controlfolder/libs"
-export PATH="$GAMEDIR:$PATH"
+export PATH="$DATADIR:$PATH"
 
-# --- 3. Directory Setup ---
-GAMEDIR="/$directory/MUOS/application/Youtube/youtube"
+# --- 3. Move into the directory ---
+cd "$DATADIR"
 
-# --- 4. Move into the directory ---
-cd "$GAMEDIR"
-
-> "$GAMEDIR/log.txt" && exec > >(tee "$GAMEDIR/log.txt") 2>&1
+> "$DATADIR/log.txt" && exec > >(tee "$DATADIR/log.txt") 2>&1
 
 # [TEXT FIX] Force system to look for fonts in the game folder
-export XDG_DATA_DIRS="$GAMEDIR:$controlfolder:$XDG_DATA_DIRS"
+export XDG_DATA_DIRS="$DIR:$controlfolder:$XDG_DATA_DIRS"
 
 # Terminal settings
 $ESUDO chmod 666 /dev/tty0
@@ -46,8 +66,8 @@ echo "Starting YouTube..."
 echo "PortMaster found at: $controlfolder"
 echo "Running in directory: $(pwd)"
 
-# YouTube uygulamasını başlat
-$ESUDO python3 youtube.py
+# Launch the application
+$ESUDO python3 "$APP_FILE"
 
 # Cleanup
 printf "\033c" > /dev/tty0

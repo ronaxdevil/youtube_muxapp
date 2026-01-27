@@ -27,8 +27,8 @@ except ImportError as e:
     print(f"SDL2 Error: {e}")
     sys.exit(1)
 
-SCREEN_WIDTH = 640
-SCREEN_HEIGHT = 480
+SCREEN_WIDTH = 720
+SCREEN_HEIGHT = 720
 ssl._create_default_https_context = ssl._create_unverified_context
 
 class Colors:
@@ -772,7 +772,7 @@ class YouTubeApp:
         for row in range(tri_size):
             w = row + 1 if row < tri_size // 2 else tri_size - row
             self.draw_rect(tri_x, tri_y + row, w, 1, Colors.TEXT_PRIMARY)
-        self.draw_text("YouTube", 55, 13, Colors.TEXT_PRIMARY, self.font_large)
+        self.draw_text("MuTube", 55, 13, Colors.TEXT_PRIMARY, self.font_large)
         self.draw_rect(0, 49, SCREEN_WIDTH, 1, Colors.DIVIDER)
 
     def render_navigation(self):
@@ -888,7 +888,7 @@ class YouTubeApp:
 
     def render_settings(self, start_y, height):
         self.draw_text(self.t("settings_title"), 20, start_y + 10, Colors.TEXT_PRIMARY, self.font_large)
-        self.draw_text("r36swiki.com", SCREEN_WIDTH - 105, start_y + 12, Colors.TEXT_PRIMARY, self.font_small)
+        self.draw_text("Ported By: Ronax", SCREEN_WIDTH - 105, start_y + 12, Colors.TEXT_PRIMARY, self.font_small)
         item_h, margin = 50, 5
         list_start_y = start_y + 50
         list_height = height - 60
