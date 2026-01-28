@@ -28,7 +28,7 @@ except ImportError as e:
     print(f"SDL2 Error: {e}")
     sys.exit(1)
 
-# Default values for resolution
+# Default Fallback Resolution
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -54,6 +54,7 @@ class Colors:
     PROGRESS_BG = (60, 60, 60)
 
 # Translations
+
 TRANSLATIONS = {
     "English": {
         "nav_home": "Home", "nav_search": "Search", "nav_favorites": "Favs",
@@ -61,7 +62,7 @@ TRANSLATIONS = {
         "settings_language": "Language", "settings_quality": "Video Quality",
         "settings_search_count": "Search Count", "settings_auto_load": "Auto Load Home",
         "settings_clear_favorites": "Clear Favorites", "settings_clear_history": "Clear History",
-        "settings_clear_cache": "Clear Thumb Cache", "settings_execute": "[A] Execute",
+        "settings_clear_cache": "Clear Thumb Cache", "settings_credits": "Credits", "settings_execute": "[A] Execute",
         "settings_on": "On", "settings_off": "Off", "msg_searching": "Searching videos...",
         "msg_loading": "Loading...", "msg_loading_video": "Loading Video...",
         "msg_loading_videos": "Loading videos...", "msg_no_results": "No results",
@@ -77,10 +78,179 @@ TRANSLATIONS = {
         "time_today": "Today", "time_live": "LIVE",
         "exit_confirm_title": "Are you sure you want to exit?", "exit_confirm_yes": "Yes",
         "exit_confirm_no": "No", "exit_confirm_help": "[<>] Select [A] Confirm [B] Cancel",
+        "credits_title": "Credits", "credits_dev": "Dev: Ronax", "credits_lib": "Based on r36swiki.com work, Powered by yt-dlp & SDL2"
     },
+    "Espanol": {
+        "nav_home": "Inicio", "nav_search": "Buscar", "nav_favorites": "Favs",
+        "nav_history": "Historial", "nav_settings": "Ajustes", "settings_title": "Ajustes",
+        "settings_language": "Idioma", "settings_quality": "Calidad",
+        "settings_search_count": "Resultados", "settings_auto_load": "Auto Carga",
+        "settings_clear_favorites": "Borrar Favoritos", "settings_clear_history": "Borrar Historial",
+        "settings_clear_cache": "Borrar Cache", "settings_credits": "Créditos", "settings_execute": "[A] Ejecutar",
+        "settings_on": "Si", "settings_off": "No", "msg_searching": "Buscando...",
+        "msg_loading": "Cargando...", "msg_loading_video": "Cargando Video...",
+        "msg_loading_videos": "Cargando videos...", "msg_no_results": "Sin resultados",
+        "msg_press_search": "Pulsa X para buscar", "msg_no_ytdlp": "¡Falta yt-dlp!",
+        "msg_no_player": "¡Falta reproductor!", "msg_install_ytdlp": "Instala: pip install yt-dlp",
+        "msg_install_player": "Instala: mpv o ffplay", "msg_timeout": "Tiempo agotado",
+        "msg_added_fav": "Añadido a favoritos", "msg_removed_fav": "Eliminado de favoritos",
+        "msg_fav_cleared": "Favoritos borrados", "msg_history_cleared": "Historial borrado",
+        "msg_cache_cleared": "Cache borrada", "msg_videos": "videos",
+        "help_keyboard": "A:Escribir B:Cerrar START:Ir",
+        "help_main": "A:Sel B:Atrás X:Buscar Y:Fav",
+        "kb_space": "ESPACIO", "kb_go": "IR", "kb_search_placeholder": "Escribe para buscar...",
+        "time_today": "Hoy", "time_live": "VIVO",
+        "exit_confirm_title": "¿Seguro que quieres salir?", "exit_confirm_yes": "Si",
+        "exit_confirm_no": "No", "exit_confirm_help": "[<>] Seleccionar [A] Confirmar",
+        "credits_title": "Créditos", "credits_dev": "Dev: Ronax", "credits_lib": "Basado en r36swiki.com, con yt-dlp & SDL2"
+    },
+    "Francais": {
+        "nav_home": "Accueil", "nav_search": "Chercher", "nav_favorites": "Favoris",
+        "nav_history": "Historique", "nav_settings": "Paramètres", "settings_title": "Paramètres",
+        "settings_language": "Langue", "settings_quality": "Qualité Vidéo",
+        "settings_search_count": "Nb. Résultats", "settings_auto_load": "Chargement Auto",
+        "settings_clear_favorites": "Vider Favoris", "settings_clear_history": "Vider Historique",
+        "settings_clear_cache": "Vider Cache", "settings_credits": "Crédits", "settings_execute": "[A] Exécuter",
+        "settings_on": "Oui", "settings_off": "Non", "msg_searching": "Recherche...",
+        "msg_loading": "Chargement...", "msg_loading_video": "Chargement Vidéo...",
+        "msg_loading_videos": "Chargement vidéos...", "msg_no_results": "Aucun résultat",
+        "msg_press_search": "Appuyez sur X", "msg_no_ytdlp": "yt-dlp introuvable!",
+        "msg_no_player": "Aucun lecteur!", "msg_install_ytdlp": "Installez: pip install yt-dlp",
+        "msg_install_player": "Installez: mpv ou ffplay", "msg_timeout": "Délai dépassé",
+        "msg_added_fav": "Ajouté aux favoris", "msg_removed_fav": "Retiré des favoris",
+        "msg_fav_cleared": "Favoris effacés", "msg_history_cleared": "Historique effacé",
+        "msg_cache_cleared": "Cache effacé", "msg_videos": "vidéos",
+        "help_keyboard": "A:Entrée B:Fermer START:Go",
+        "help_main": "A:Sel B:Retour X:Chercher Y:Fav",
+        "kb_space": "ESPACE", "kb_go": "GO", "kb_search_placeholder": "Tapez pour chercher...",
+        "time_today": "Auj.", "time_live": "LIVE",
+        "exit_confirm_title": "Voulez-vous vraiment quitter?", "exit_confirm_yes": "Oui",
+        "exit_confirm_no": "Non", "exit_confirm_help": "[<>] Choisir [A] Confirmer",
+        "credits_title": "Crédits", "credits_dev": "Dev: Ronax", "credits_lib": "Basé sur r36swiki.com, via yt-dlp & SDL2"
+    },
+    "Deutsch": {
+        "nav_home": "Start", "nav_search": "Suche", "nav_favorites": "Favoriten",
+        "nav_history": "Verlauf", "nav_settings": "Einstellungen", "settings_title": "Einstellungen",
+        "settings_language": "Sprache", "settings_quality": "Qualität",
+        "settings_search_count": "Anzahl", "settings_auto_load": "Auto-Start",
+        "settings_clear_favorites": "Favoriten leeren", "settings_clear_history": "Verlauf leeren",
+        "settings_clear_cache": "Cache leeren", "settings_credits": "Credits", "settings_execute": "[A] Ausführen",
+        "settings_on": "An", "settings_off": "Aus", "msg_searching": "Suchen...",
+        "msg_loading": "Laden...", "msg_loading_video": "Lade Video...",
+        "msg_loading_videos": "Lade Videos...", "msg_no_results": "Keine Ergebnisse",
+        "msg_press_search": "Drücke X zum Suchen", "msg_no_ytdlp": "yt-dlp fehlt!",
+        "msg_no_player": "Kein Player!", "msg_install_ytdlp": "Installiere: pip install yt-dlp",
+        "msg_install_player": "Installiere: mpv oder ffplay", "msg_timeout": "Zeitüberschreitung",
+        "msg_added_fav": "Zu Favoriten hinzugefügt", "msg_removed_fav": "Aus Favoriten entfernt",
+        "msg_fav_cleared": "Favoriten geleert", "msg_history_cleared": "Verlauf geleert",
+        "msg_cache_cleared": "Cache geleert", "msg_videos": "Videos",
+        "help_keyboard": "A:Tippen B:Zu START:Los",
+        "help_main": "A:Wählen B:Zurück X:Suche Y:Fav",
+        "kb_space": "LEER", "kb_go": "LOS", "kb_search_placeholder": "Suchbegriff eingeben...",
+        "time_today": "Heute", "time_live": "LIVE",
+        "exit_confirm_title": "Wirklich beenden?", "exit_confirm_yes": "Ja",
+        "exit_confirm_no": "Nein", "exit_confirm_help": "[<>] Wählen [A] Bestätigen",
+        "credits_title": "Credits", "credits_dev": "Dev: Ronax", "credits_lib": "Basierend auf r36swiki.com, mit yt-dlp & SDL2"
+    },
+    "Portugues": {
+        "nav_home": "Início", "nav_search": "Buscar", "nav_favorites": "Favs",
+        "nav_history": "Histórico", "nav_settings": "Config", "settings_title": "Configurações",
+        "settings_language": "Idioma", "settings_quality": "Qualidade",
+        "settings_search_count": "Contagem", "settings_auto_load": "Auto Carregar",
+        "settings_clear_favorites": "Limpar Favoritos", "settings_clear_history": "Limpar Histórico",
+        "settings_clear_cache": "Limpar Cache", "settings_credits": "Créditos", "settings_execute": "[A] Executar",
+        "settings_on": "Sim", "settings_off": "Não", "msg_searching": "Buscando...",
+        "msg_loading": "Carregando...", "msg_loading_video": "Carregando Vídeo...",
+        "msg_loading_videos": "Carregando vídeos...", "msg_no_results": "Sem resultados",
+        "msg_press_search": "Pressione X para buscar", "msg_no_ytdlp": "yt-dlp não encontrado!",
+        "msg_no_player": "Sem player!", "msg_install_ytdlp": "Instale: pip install yt-dlp",
+        "msg_install_player": "Instale: mpv ou ffplay", "msg_timeout": "Tempo esgotado",
+        "msg_added_fav": "Adicionado aos favoritos", "msg_removed_fav": "Removido dos favoritos",
+        "msg_fav_cleared": "Favoritos limpos", "msg_history_cleared": "Histórico limpo",
+        "msg_cache_cleared": "Cache limpo", "msg_videos": "vídeos",
+        "help_keyboard": "A:Digitar B:Fechar START:Ir",
+        "help_main": "A:Sel B:Voltar X:Busca Y:Fav",
+        "kb_space": "ESPAÇO", "kb_go": "IR", "kb_search_placeholder": "Digite para buscar...",
+        "time_today": "Hoje", "time_live": "AO VIVO",
+        "exit_confirm_title": "Tem certeza que deseja sair?", "exit_confirm_yes": "Sim",
+        "exit_confirm_no": "Não", "exit_confirm_help": "[<>] Selecionar [A] Confirmar",
+        "credits_title": "Créditos", "credits_dev": "Dev: Ronax", "credits_lib": "Baseado em r36swiki.com, com yt-dlp & SDL2"
+    },
+    "Turkce": {
+        "nav_home": "Ana Sayfa", "nav_search": "Ara", "nav_favorites": "Favoriler",
+        "nav_history": "Geçmiş", "nav_settings": "Ayarlar", "settings_title": "Ayarlar",
+        "settings_language": "Dil", "settings_quality": "Kalite",
+        "settings_search_count": "Sayı", "settings_auto_load": "Oto. Yükle",
+        "settings_clear_favorites": "Fav. Temizle", "settings_clear_history": "Geçmişi Temizle",
+        "settings_clear_cache": "Önbelleği Temizle", "settings_credits": "Emeği Geçenler", "settings_execute": "[A] Uygula",
+        "settings_on": "Açık", "settings_off": "Kapalı", "msg_searching": "Aranıyor...",
+        "msg_loading": "Yükleniyor...", "msg_loading_video": "Video Yükleniyor...",
+        "msg_loading_videos": "Videolar Yükleniyor...", "msg_no_results": "Sonuç yok",
+        "msg_press_search": "Aramak için X'e basın", "msg_no_ytdlp": "yt-dlp bulunamadı!",
+        "msg_no_player": "Oynatıcı yok!", "msg_install_ytdlp": "Yükle: pip install yt-dlp",
+        "msg_install_player": "Yükle: mpv veya ffplay", "msg_timeout": "Zaman aşımı",
+        "msg_added_fav": "Favorilere eklendi", "msg_removed_fav": "Favorilerden çıkarıldı",
+        "msg_fav_cleared": "Favoriler temizlendi", "msg_history_cleared": "Geçmiş temizlendi",
+        "msg_cache_cleared": "Önbellek temizlendi", "msg_videos": "video",
+        "help_keyboard": "A:Yaz B:Kapat START:Git",
+        "help_main": "A:Seç B:Geri X:Ara Y:Fav",
+        "kb_space": "BOŞLUK", "kb_go": "GİT", "kb_search_placeholder": "Aramak için yazın...",
+        "time_today": "Bugün", "time_live": "CANLI",
+        "exit_confirm_title": "Çıkmak istiyor musunuz?", "exit_confirm_yes": "Evet",
+        "exit_confirm_no": "Hayır", "exit_confirm_help": "[<>] Seç [A] Onayla",
+        "credits_title": "Emeği Geçenler", "credits_dev": "Dev: Ronax", "credits_lib": "r36swiki.com tabanlı, yt-dlp & SDL2 ile"
+    },
+    "Russian": {
+        "nav_home": "Главная", "nav_search": "Поиск", "nav_favorites": "Избранное",
+        "nav_history": "История", "nav_settings": "Настройки", "settings_title": "Настройки",
+        "settings_language": "Язык", "settings_quality": "Качество",
+        "settings_search_count": "Кол-во", "settings_auto_load": "Автозагрузка",
+        "settings_clear_favorites": "Очистить избранное", "settings_clear_history": "Очистить историю",
+        "settings_clear_cache": "Очистить кэш", "settings_credits": "О программе", "settings_execute": "[A] Выполнить",
+        "settings_on": "Вкл", "settings_off": "Выкл", "msg_searching": "Поиск...",
+        "msg_loading": "Загрузка...", "msg_loading_video": "Загрузка видео...",
+        "msg_loading_videos": "Загрузка списка...", "msg_no_results": "Нет результатов",
+        "msg_press_search": "Нажмите X для поиска", "msg_no_ytdlp": "yt-dlp не найден!",
+        "msg_no_player": "Нет плеера!", "msg_install_ytdlp": "Установите: pip install yt-dlp",
+        "msg_install_player": "Установите: mpv или ffplay", "msg_timeout": "Тайм-аут",
+        "msg_added_fav": "Добавлено в избранное", "msg_removed_fav": "Удалено из избранного",
+        "msg_fav_cleared": "Избранное очищено", "msg_history_cleared": "История очищена",
+        "msg_cache_cleared": "Кэш очищен", "msg_videos": "видео",
+        "help_keyboard": "A:Ввод B:Закр START:Поиск",
+        "help_main": "A:Выбор B:Назад X:Поиск Y:Избр",
+        "kb_space": "ПРОБЕЛ", "kb_go": "ГО", "kb_search_placeholder": "Введите запрос...",
+        "time_today": "Сегодня", "time_live": "ЭФИР",
+        "exit_confirm_title": "Вы уверены, что хотите выйти?", "exit_confirm_yes": "Да",
+        "exit_confirm_no": "Нет", "exit_confirm_help": "[<>] Выбор [A] Подтвердить",
+        "credits_title": "О программе", "credits_dev": "Разраб: Ronax", "credits_lib": "Основано на r36swiki.com, yt-dlp & SDL2"
+    },
+    "Ukrainian": {
+        "nav_home": "Головна", "nav_search": "Пошук", "nav_favorites": "Улюблене",
+        "nav_history": "Історія", "nav_settings": "Налаштування", "settings_title": "Налаштування",
+        "settings_language": "Мова", "settings_quality": "Якість",
+        "settings_search_count": "Кількість", "settings_auto_load": "Автозавантаження",
+        "settings_clear_favorites": "Очистити улюблене", "settings_clear_history": "Очистити історію",
+        "settings_clear_cache": "Очистити кеш", "settings_credits": "Про програму", "settings_execute": "[A] Виконати",
+        "settings_on": "Увімк", "settings_off": "Вимк", "msg_searching": "Пошук...",
+        "msg_loading": "Завантаження...", "msg_loading_video": "Завантаження відео...",
+        "msg_loading_videos": "Завантаження списку...", "msg_no_results": "Немає результатів",
+        "msg_press_search": "Натисніть X для пошуку", "msg_no_ytdlp": "yt-dlp не знайдено!",
+        "msg_no_player": "Немає плеєра!", "msg_install_ytdlp": "Встановіть: pip install yt-dlp",
+        "msg_install_player": "Встановіть: mpv або ffplay", "msg_timeout": "Час вичерпано",
+        "msg_added_fav": "Додано в улюблене", "msg_removed_fav": "Видалено з улюбленого",
+        "msg_fav_cleared": "Улюблене очищено", "msg_history_cleared": "Історію очищено",
+        "msg_cache_cleared": "Кеш очищено", "msg_videos": "відео",
+        "help_keyboard": "A:Ввід B:Закр START:Пошук",
+        "help_main": "A:Вибір B:Назад X:Пошук Y:Улюб",
+        "kb_space": "ПРОБІЛ", "kb_go": "ГО", "kb_search_placeholder": "Введіть запит...",
+        "time_today": "Сьогодні", "time_live": "ЕФІР",
+        "exit_confirm_title": "Ви впевнені, що хочете вийти?", "exit_confirm_yes": "Так",
+        "exit_confirm_no": "Ні", "exit_confirm_help": "[<>] Вибір [A] Підтвердити",
+        "credits_title": "Про програму", "credits_dev": "Розроб: Ronax", "credits_lib": "Засновано на r36swiki.com, yt-dlp & SDL2"
+    }
 }
 
-LANGUAGES = ["English", "Turkce", "Espanol", "Portugues", "Deutsch", "Francais", "Russian", "Ukrainian"]
+LANGUAGES = ["English", "Espanol", "Francais", "Deutsch", "Portugues", "Turkce", "Russian", "Ukrainian"]
 NAV_HOME, NAV_SEARCH, NAV_FAVORITES, NAV_HISTORY, NAV_SETTINGS = 0, 1, 2, 3, 4
 
 def find_ytdlp():
@@ -166,22 +336,22 @@ class YouTubeApp:
 
         global SCREEN_WIDTH, SCREEN_HEIGHT
         if "APP_SCREEN_WIDTH" in os.environ and "APP_SCREEN_HEIGHT" in os.environ:
-            SCREEN_WIDTH = int(os.environ["APP_SCREEN_WIDTH"])
-            SCREEN_HEIGHT = int(os.environ["APP_SCREEN_HEIGHT"])
-            print(f"Using Script Resolution: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+            self.screen_width = int(os.environ["APP_SCREEN_WIDTH"])
+            self.screen_height = int(os.environ["APP_SCREEN_HEIGHT"])
+            print(f"Using Script Resolution: {self.screen_width}x{self.screen_height}")
 
         else:
             display_mode = SDL_DisplayMode()
             if SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode)) == 0:
-                SCREEN_WIDTH = display_mode.w
-                SCREEN_HEIGHT = display_mode.h
-                print(f"Auto-Detected Resolution: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+                self.screen_width = display_mode.w
+                self.screen_height = display_mode.h
+                print(f"Auto-Detected Resolution: {self.screen_width}x{self.screen_height}")
             else:
-                SCREEN_WIDTH = 640
-                SCREEN_HEIGHT = 480
+                self.screen_width = 640
+                self.screen_height = 480
                 print("Resolution detect failed, using 640x480")
 
-        self.window = SDL_CreateWindow(b"YouTube", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN)
+        self.window = SDL_CreateWindow(b"YouTube", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, self.screen_width, self.screen_height, SDL_WINDOW_SHOWN)
         self.renderer = SDL_CreateRenderer(self.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
         SDL_SetRenderDrawBlendMode(self.renderer, SDL_BLENDMODE_BLEND)
         
@@ -264,7 +434,8 @@ class YouTubeApp:
         self.key_held = None
         self.key_hold_start = 0
         self.last_repeat = 0
-        
+
+        self.credits_active = False
         self.is_playing = False
         self.is_loading_video = False
         self.is_searching = False
@@ -305,7 +476,7 @@ class YouTubeApp:
             if os.path.exists(path):
                 with open(path) as f: return json.load(f)
         except: pass
-        return {"quality": "480p", "search_count": "10", "auto_load": "On", "language": "English"}
+        return {"quality": "720p", "search_count": "10", "auto_load": "On", "language": "English"}
 
     def _save_settings(self):
         try:
@@ -327,6 +498,7 @@ class YouTubeApp:
             (tr["settings_quality"], "quality", ["360p", "480p", "720p"]),
             (tr["settings_search_count"], "search_count", ["10", "15", "20", "25"]),
             (tr["settings_auto_load"], "auto_load", on_off),
+            (tr.get("settings_credits", "Credits"), "show_credits", None),
             (tr["settings_clear_favorites"], "clear_favorites", None),
             (tr["settings_clear_history"], "clear_history", None),
             (tr["settings_clear_cache"], "clear_cache", None),
@@ -393,17 +565,24 @@ class YouTubeApp:
         
         def worker():
             try:
-                # Force H.264 (MP4) to prevent crashes on non-VP9 devices
+                # Force H.264 (MP4) and Split Stream
+                height = self.settings.get("quality", "720p").replace("p", "")
+                
+                # UPDATED FORMAT STRING:
+                # 1. Best video (H.264) <= requested height + Best M4A Audio
+                # 2. Fallback: ANY video <= requested height + Best Audio (Allows VP9 if H264 missing)
+                # 3. Fallback: Pre-muxed MP4 (usually 360p)
+                format_str = f"bv*[height<={height}][vcodec^=avc]+ba[ext=m4a]/bv*[height<={height}]+ba/b[height<={height}][ext=mp4]/best[height<={height}]"
+                
                 cmd = [
                     self.ytdlp_path, 
-                    "-f", "best[height<=480][ext=mp4]/best[height<=480]", 
+                    "-f", format_str, 
                     query, 
                     "--flat-playlist", 
                     "--dump-json", 
                     "--no-warnings", 
                     "--ignore-errors", 
-                    "--no-check-certificates", 
-                    "--extractor-args", "youtube:skip=dash,hls;youtube:player_client=android", 
+                    "--no-check-certificates",
                     "--socket-timeout", "15"
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
@@ -513,11 +692,42 @@ class YouTubeApp:
         tex, w, h = self.text_cache[key]
         if tex: SDL_RenderCopy(self.renderer, tex, None, SDL_Rect(int(x), int(y), w, h))
         return w
+    
+    def render_credits_popup(self):
+        # Semi-transparent overlay
+        self.draw_rect(0, 0, self.screen_width, self.screen_height, (0, 0, 0), 180)
+        
+        # Box Dimensions
+        box_w, box_h = 420, 220
+        box_x = (self.screen_width - box_w) // 2
+        box_y = (self.screen_height - box_h) // 2
+        
+        # Draw Box
+        self.draw_rect(box_x, box_y, box_w, box_h, Colors.BG_SECONDARY)
+        self.draw_rect(box_x, box_y, box_w, 2, Colors.YT_RED)
+        self.draw_rect(box_x, box_y + box_h - 2, box_w, 2, Colors.YT_RED)
+        
+        # Content
+        title = self.t("credits_title")
+        self.draw_text(title, self.screen_width // 2 - len(title) * 6, box_y + 20, Colors.TEXT_PRIMARY, self.font_large)
+        
+        dev = self.t("credits_dev")
+        self.draw_text(dev, self.screen_width // 2 - len(dev) * 4, box_y + 80, Colors.TEXT_SECONDARY, self.font)
+        
+        lib = self.t("credits_lib")
+        if len(lib) > 40:  
+             self.draw_text("Based on r36swiki.com work", self.screen_width // 2 - 130, box_y + 115, Colors.TEXT_TERTIARY, self.font_small)
+             self.draw_text("Powered by yt-dlp & SDL2", self.screen_width // 2 - 110, box_y + 135, Colors.TEXT_TERTIARY, self.font_small)
+        else:
+             self.draw_text(lib, self.screen_width // 2 - len(lib) * 3, box_y + 120, Colors.TEXT_TERTIARY, self.font_small)
+        
+        close = "[ A / B ] Close"
+        self.draw_text(close, self.screen_width // 2 - len(close) * 3, box_y + box_h - 30, Colors.YT_RED, self.font_tiny)
 
     def render_loading_screen(self, title="Loading...", subtitle=""):
         SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
         SDL_RenderClear(self.renderer)
-        logo_x, logo_y = SCREEN_WIDTH // 2 - 17, SCREEN_HEIGHT // 2 - 80
+        logo_x, logo_y = self.screen_width // 2 - 17, self.screen_height // 2 - 80
         logo_w, logo_h = 34, 24
         self.draw_rect(logo_x + 2, logo_y, logo_w - 4, logo_h, Colors.YT_RED)
         self.draw_rect(logo_x, logo_y + 2, logo_w, logo_h - 4, Colors.YT_RED)
@@ -526,12 +736,12 @@ class YouTubeApp:
         for row in range(tri_size):
             w = row + 1 if row < tri_size // 2 else tri_size - row
             self.draw_rect(tri_x, tri_y + row, w, 1, Colors.TEXT_PRIMARY)
-        self.draw_text(title, SCREEN_WIDTH // 2 - len(title) * 5, SCREEN_HEIGHT // 2 - 20, Colors.TEXT_PRIMARY, self.font_large)
+        self.draw_text(title, self.screen_width // 2 - len(title) * 5, self.screen_height // 2 - 20, Colors.TEXT_PRIMARY, self.font_large)
         if subtitle:
             short_title = subtitle[:40] + "..." if len(subtitle) > 40 else subtitle
-            self.draw_text(short_title, SCREEN_WIDTH // 2 - len(short_title) * 4, SCREEN_HEIGHT // 2 + 20, Colors.TEXT_SECONDARY, self.font_small)
+            self.draw_text(short_title, self.screen_width // 2 - len(short_title) * 4, self.screen_height // 2 + 20, Colors.TEXT_SECONDARY, self.font_small)
         bar_width, bar_height = 200, 4
-        bar_x, bar_y = SCREEN_WIDTH // 2 - bar_width // 2, SCREEN_HEIGHT // 2 + 60
+        bar_x, bar_y = self.screen_width // 2 - bar_width // 2, self.screen_height // 2 + 60
         self.draw_rect(bar_x, bar_y, bar_width, bar_height, Colors.PROGRESS_BG)
         progress_width = 60
         offset = (self.frame_count * 3) % (bar_width + progress_width)
@@ -543,22 +753,22 @@ class YouTubeApp:
         self.frame_count += 1
 
     def render_exit_confirm(self):
-        self.draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (0, 0, 0), 180)
+        self.draw_rect(0, 0, self.screen_width, self.screen_height, (0, 0, 0), 180)
         box_w, box_h = 400, 160
-        box_x = (SCREEN_WIDTH - box_w) // 2
-        box_y = (SCREEN_HEIGHT - box_h) // 2
+        box_x = (self.screen_width - box_w) // 2
+        box_y = (self.screen_height - box_h) // 2
         self.draw_rect(box_x, box_y, box_w, box_h, Colors.BG_SECONDARY)
         self.draw_rect(box_x, box_y, box_w, 2, Colors.YT_RED)
         self.draw_rect(box_x, box_y + box_h - 2, box_w, 2, Colors.YT_RED)
         icon_y = box_y + 20
-        icon_size, icon_x = 40, SCREEN_WIDTH // 2 - 20
+        icon_size, icon_x = 40, self.screen_width // 2 - 20
         self.draw_rect(icon_x, icon_y, icon_size, icon_size, Colors.YT_RED)
         for i in range(24):
             for t in range(4):
                 self.draw_rect(icon_x + 8 + i, icon_y + 8 + i + t, 1, 1, Colors.TEXT_PRIMARY)
                 self.draw_rect(icon_x + 32 - i, icon_y + 8 + i + t, 1, 1, Colors.TEXT_PRIMARY)
         title = self.t("exit_confirm_title")
-        self.draw_text(title, SCREEN_WIDTH // 2 - len(title) * 4.5, icon_y + 55, Colors.TEXT_PRIMARY, self.font)
+        self.draw_text(title, self.screen_width // 2 - len(title) * 4.5, icon_y + 55, Colors.TEXT_PRIMARY, self.font)
         btn_y, btn_w, btn_h, gap = box_y + box_h - 50, 140, 36, 20
         no_x = box_x + (box_w - btn_w * 2 - gap) // 2
         no_sel = self.exit_confirm_selection == 0
@@ -577,7 +787,7 @@ class YouTubeApp:
         yes_txt = self.t("exit_confirm_yes")
         self.draw_text(yes_txt, yes_x + btn_w//2 - len(yes_txt)*4.5, btn_y + 10, Colors.TEXT_PRIMARY, self.font)
         help_txt = self.t("exit_confirm_help")
-        self.draw_text(help_txt, SCREEN_WIDTH // 2 - len(help_txt) * 3, box_y + box_h - 12, Colors.TEXT_TERTIARY, self.font_tiny)
+        self.draw_text(help_txt, self.screen_width // 2 - len(help_txt) * 3, box_y + box_h - 12, Colors.TEXT_TERTIARY, self.font_tiny)
 
     def play_video(self, video):
         if not self.ytdlp_path:
@@ -592,29 +802,43 @@ class YouTubeApp:
         self.status, self.status_type = "Loading video...", "loading"
         self.need_redraw = True
         self.render_loading_screen(self.t("msg_loading_video"), video.title)
-        quality = self.settings.get("quality", "480p")
+        
+        # NOTE: Default to 720p if settings are missing or old
+        quality = self.settings.get("quality", "720p")
+        print(f"Requesting Quality: {quality}")
         height = quality.replace("p", "")
         
         def worker():
             try:
+                # Force H.264 (MP4) and Split Stream
+                format_str = f"bv*[height<={height}]+ba/b[height<={height}]"
+                
                 cmd = [
                     self.ytdlp_path, 
-                    "-f", f"best[height<={height}][ext=mp4]/best[height<={height}]", 
+                    "-f", format_str, 
+                    "-S", "res,vcodec:avc",
                     "-g", 
                     "--no-warnings", 
                     "--no-check-certificates", 
                     "--no-playlist", 
-                    "--extractor-args", "youtube:player_client=android", 
                     video.url
                 ]
+                
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
                 if result.returncode != 0:
                     self.status, self.status_type, self.is_loading_video, self.need_redraw = "Failed to get URL", "error", False, True
                     return
-                stream_url = result.stdout.strip().split('\n')[0]
-                if not stream_url:
+                
+                urls = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+                
+                if not urls:
                     self.status, self.status_type, self.is_loading_video, self.need_redraw = "No stream URL", "error", False, True
                     return
+                
+                video_url = urls[0]
+                audio_url = urls[1] if len(urls) > 1 else None
+                
                 self.is_loading_video = False
                 SDL_HideWindow(self.window)
                 self.is_playing = True
@@ -624,20 +848,24 @@ class YouTubeApp:
                 self.mpv_socket = f"/tmp/mpv_{os.getpid()}"
                 
                 if player_name == "mpv":
-                    player_cmd = [player, "--fs", "--no-terminal", "--really-quiet", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500", "--cache=yes", "--demuxer-max-bytes=50M", stream_url]
+                    player_cmd = [player, "--fs", "--no-terminal", "--really-quiet", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500", "--cache=yes", "--demuxer-max-bytes=50M"]
+                    if audio_url:
+                        player_cmd.append(f"--audio-file={audio_url}")
+                    player_cmd.append(video_url)
                 elif player_name == "ffplay":
                     player_cmd = [player, "-fs", "-autoexit", "-noborder", "-framedrop", "-exitonkeydown"]
                     if height and int(height) <= 480: player_cmd.extend(["-lowres", "1"])
-                    player_cmd.extend(["-infbuf", "-threads", "4", "-sync", "video", stream_url])
+                    player_cmd.extend(["-infbuf", "-threads", "4", "-sync", "video", video_url])
                 elif player_name == "vlc":
-                    player_cmd = [player, "--fullscreen", "--play-and-exit", "-q", stream_url]
+                    player_cmd = [player, "--fullscreen", "--play-and-exit", "-q", video_url]
+                    if audio_url:
+                        player_cmd.extend(["--input-slave", audio_url])
                 else:
-                    player_cmd = [player, stream_url]
+                    player_cmd = [player, video_url]
                 
                 env = os.environ.copy()
                 if 'DISPLAY' not in env: env['DISPLAY'] = ':0'
                 
-                # FIX: Use local variable first to avoid race condition
                 proc = subprocess.Popen(player_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, env=env)
                 self.player_process = proc
                 
@@ -665,18 +893,6 @@ class YouTubeApp:
                 self.status, self.status_type, self.need_redraw = "Ready", "ok", True
         threading.Thread(target=worker, daemon=True).start()
 
-    def send_mpv_command(self, command):
-        if not self.is_playing or not hasattr(self, 'mpv_socket') or not self.mpv_socket: return False
-        try:
-            import socket
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.settimeout(0.5)
-            sock.connect(self.mpv_socket)
-            sock.send((json.dumps({"command": command}) + "\n").encode())
-            sock.close()
-            return True
-        except: return False
-
     def get_mpv_property(self, prop):
         if not self.is_playing or not hasattr(self, 'mpv_socket') or not self.mpv_socket: return "?"
         try:
@@ -691,10 +907,21 @@ class YouTubeApp:
             for line in data.split('\n'):
                 if line.strip():
                     resp = json.loads(line)
-                    if "data" in resp:
-                        return str(resp["data"])
+                    if "data" in resp: return str(resp["data"])
             return "?"
         except: return "?"
+
+    def send_mpv_command(self, command):
+        if not self.is_playing or not hasattr(self, 'mpv_socket') or not self.mpv_socket: return False
+        try:
+            import socket
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            sock.connect(self.mpv_socket)
+            sock.send((json.dumps({"command": command}) + "\n").encode())
+            sock.close()
+            return True
+        except: return False
 
     def player_seek(self, seconds):
         if self.is_playing: self.send_mpv_command(["seek", str(seconds), "relative"])
@@ -799,7 +1026,7 @@ class YouTubeApp:
             self.draw_text(dots, x + width//2 - 10, y + height//2 - 5, Colors.TEXT_SECONDARY, self.font_small)
 
     def render_header(self):
-        self.draw_rect(0, 0, SCREEN_WIDTH, 50, Colors.BG_PRIMARY)
+        self.draw_rect(0, 0, self.screen_width, 50, Colors.BG_PRIMARY)
         logo_x, logo_y = 15, 12
         logo_w, logo_h = 34, 24
         self.draw_rect(logo_x + 2, logo_y, logo_w - 4, logo_h, Colors.YT_RED)
@@ -810,20 +1037,20 @@ class YouTubeApp:
             w = row + 1 if row < tri_size // 2 else tri_size - row
             self.draw_rect(tri_x, tri_y + row, w, 1, Colors.TEXT_PRIMARY)
         self.draw_text("MuTube", 55, 13, Colors.TEXT_PRIMARY, self.font_large)
-        self.draw_rect(0, 49, SCREEN_WIDTH, 1, Colors.DIVIDER)
+        self.draw_rect(0, 49, self.screen_width, 1, Colors.DIVIDER)
 
     def render_navigation(self):
-        nav_y = SCREEN_HEIGHT - 55
+        nav_y = self.screen_height - 55
         help_y = nav_y - 18
-        self.draw_rect(0, help_y, SCREEN_WIDTH, 18, Colors.BG_SECONDARY)
+        self.draw_rect(0, help_y, self.screen_width, 18, Colors.BG_SECONDARY)
         help_text = self.t("help_keyboard") if self.search_active else self.t("help_main")
-        self.draw_text(help_text, SCREEN_WIDTH//2 - len(help_text)*3, help_y + 3, Colors.TEXT_TERTIARY, self.font_tiny)
-        self.draw_rect(0, nav_y, SCREEN_WIDTH, 55, Colors.NAV_BG)
-        self.draw_rect(0, nav_y, SCREEN_WIDTH, 1, Colors.DIVIDER)
+        self.draw_text(help_text, self.screen_width//2 - len(help_text)*3, help_y + 3, Colors.TEXT_TERTIARY, self.font_tiny)
+        self.draw_rect(0, nav_y, self.screen_width, 55, Colors.NAV_BG)
+        self.draw_rect(0, nav_y, self.screen_width, 1, Colors.DIVIDER)
         items = [("home", self.t("nav_home"), NAV_HOME), ("search", self.t("nav_search"), NAV_SEARCH),
                  ("favorites", self.t("nav_favorites"), NAV_FAVORITES), ("history", self.t("nav_history"), NAV_HISTORY),
                  ("settings", self.t("nav_settings"), NAV_SETTINGS)]
-        item_w = SCREEN_WIDTH // len(items)
+        item_w = self.screen_width // len(items)
         for i, (icon_type, label, nav_id) in enumerate(items):
             x = i * item_w
             cx = x + item_w // 2
@@ -896,7 +1123,7 @@ class YouTubeApp:
 
     def render_content(self):
         y = 55
-        h = SCREEN_HEIGHT - 55 - 73
+        h = self.screen_height - 55 - 73
         if self.current_nav == NAV_SETTINGS: self.render_settings(y, h); return
         if self.is_searching: self.render_searching(y); return
         videos = self._get_list()
@@ -905,27 +1132,27 @@ class YouTubeApp:
 
     def render_searching(self, y):
         msg = self.t("msg_searching")
-        self.draw_text(msg, SCREEN_WIDTH//2 - len(msg)*5, y + 100, Colors.TEXT_SECONDARY, self.font)
+        self.draw_text(msg, self.screen_width//2 - len(msg)*5, y + 100, Colors.TEXT_SECONDARY, self.font)
         if hasattr(self, 'last_search_query') and self.last_search_query:
             query_text = f'"{self.last_search_query}"'
             if len(query_text) > 35: query_text = query_text[:32] + '..."'
-            self.draw_text(query_text, SCREEN_WIDTH//2 - len(query_text)*4, y + 130, Colors.TEXT_TERTIARY, self.font_small)
-        self.draw_spinner(SCREEN_WIDTH // 2, y + 190, radius=14, dot_size=4)
+            self.draw_text(query_text, self.screen_width//2 - len(query_text)*4, y + 130, Colors.TEXT_TERTIARY, self.font_small)
+        self.draw_spinner(self.screen_width // 2, y + 190, radius=14, dot_size=4)
 
     def render_empty(self, y):
         msg = self.t("msg_press_search")
         if not self.ytdlp_path: msg = self.t("msg_no_ytdlp")
         elif not self.video_player: msg = self.t("msg_no_player")
-        self.draw_text(msg, SCREEN_WIDTH//2 - len(msg)*5, y + 100, Colors.TEXT_SECONDARY, self.font)
+        self.draw_text(msg, self.screen_width//2 - len(msg)*5, y + 100, Colors.TEXT_SECONDARY, self.font)
         if not self.ytdlp_path: self.draw_text(self.t("msg_install_ytdlp"), 150, y + 140, Colors.TEXT_TERTIARY, self.font_tiny)
         if not self.video_player: self.draw_text(self.t("msg_install_player"), 170, y + 160, Colors.TEXT_TERTIARY, self.font_tiny)
         if self.current_nav == NAV_HOME and (self.is_loading or self.home_batch_loading):
-            self.draw_spinner(SCREEN_WIDTH // 2, y + 200, radius=12, dot_size=3)
-            self.draw_text(self.t("msg_loading_videos"), SCREEN_WIDTH // 2 - 55, y + 230, Colors.TEXT_TERTIARY, self.font_small)
+            self.draw_spinner(self.screen_width // 2, y + 200, radius=12, dot_size=3)
+            self.draw_text(self.t("msg_loading_videos"), self.screen_width // 2 - 55, y + 230, Colors.TEXT_TERTIARY, self.font_small)
 
     def render_settings(self, start_y, height):
         self.draw_text(self.t("settings_title"), 20, start_y + 10, Colors.TEXT_PRIMARY, self.font_large)
-        self.draw_text("Ported By: Ronax", SCREEN_WIDTH - 105, start_y + 12, Colors.TEXT_PRIMARY, self.font_small)
+        self.draw_text("By: Ronax", self.screen_width - 105, start_y + 12, Colors.TEXT_PRIMARY, self.font_small)
         item_h, margin = 50, 5
         list_start_y = start_y + 50
         list_height = height - 60
@@ -937,21 +1164,21 @@ class YouTubeApp:
             label, key, options = self.settings_items[i]
             selected = i == self.settings_selected
             if selected:
-                self.draw_rect(15, y, SCREEN_WIDTH - 30, item_h, Colors.CARD_SELECTED)
+                self.draw_rect(15, y, self.screen_width - 30, item_h, Colors.CARD_SELECTED)
                 self.draw_rect(15, y, 4, item_h, Colors.YT_RED)
-            else: self.draw_rect(15, y, SCREEN_WIDTH - 30, item_h, Colors.CARD_BG)
+            else: self.draw_rect(15, y, self.screen_width - 30, item_h, Colors.CARD_BG)
             self.draw_text(label, 30, y + 15, Colors.TEXT_PRIMARY if selected else Colors.TEXT_SECONDARY, self.font)
-            if options is None: self.draw_text(self.t("settings_execute"), SCREEN_WIDTH - 130, y + 15, Colors.YT_RED, self.font_small)
+            if options is None: self.draw_text(self.t("settings_execute"), self.screen_width - 130, y + 15, Colors.YT_RED, self.font_small)
             else:
                 current = self.settings.get(key, options[0])
-                self.draw_text(f"< {current} >", SCREEN_WIDTH - 130, y + 15, Colors.TEXT_PRIMARY if selected else Colors.TEXT_TERTIARY, self.font)
+                self.draw_text(f"< {current} >", self.screen_width - 130, y + 15, Colors.TEXT_PRIMARY if selected else Colors.TEXT_TERTIARY, self.font)
             y += item_h + margin
         if len(self.settings_items) > visible_count:
             sb_height = list_height
             thumb_height = max(20, int(sb_height * visible_count / len(self.settings_items)))
             thumb_y = list_start_y + int((sb_height - thumb_height) * self.settings_scroll / max(1, len(self.settings_items) - visible_count))
-            self.draw_rect(SCREEN_WIDTH - 8, list_start_y, 4, sb_height, Colors.PROGRESS_BG)
-            self.draw_rect(SCREEN_WIDTH - 8, thumb_y, 4, thumb_height, Colors.YT_RED)
+            self.draw_rect(self.screen_width - 8, list_start_y, 4, sb_height, Colors.PROGRESS_BG)
+            self.draw_rect(self.screen_width - 8, thumb_y, 4, thumb_height, Colors.YT_RED)
 
     def change_setting(self, direction):
         if self.settings_selected >= len(self.settings_items): return
@@ -992,6 +1219,8 @@ class YouTubeApp:
                 self.failed_images.clear()
                 self.status, self.status_type = self.t("msg_cache_cleared"), "ok"
             except Exception as e: self.status, self.status_type = f"Error: {str(e)[:20]}", "error"
+        elif key == "show_credits":
+            self.credits_active = True
         self.need_redraw = True
 
     def render_video_list(self, videos, start_y, height):
@@ -1011,7 +1240,7 @@ class YouTubeApp:
             idx = self.scroll + i
             y = start_y + i * (card_h + margin)
             selected = idx == self.selected
-            self.draw_rect(10, y, SCREEN_WIDTH - 20, card_h, Colors.CARD_SELECTED if selected else Colors.CARD_BG)
+            self.draw_rect(10, y, self.screen_width - 20, card_h, Colors.CARD_SELECTED if selected else Colors.CARD_BG)
             if selected: self.draw_rect(10, y, 4, card_h, Colors.YT_RED)
             self.draw_thumbnail(18, y + 5, thumb_w, thumb_h, video.thumbnail)
             if video.duration:
@@ -1029,25 +1258,25 @@ class YouTubeApp:
         if show_loading_card:
             displayed_count = min(len(videos) - self.scroll, visible)
             spinner_card_y = start_y + displayed_count * (card_h + margin)
-            self.draw_rect(10, spinner_card_y, SCREEN_WIDTH - 20, card_h, Colors.BG_SECONDARY)
-            self.draw_spinner(SCREEN_WIDTH // 2, spinner_card_y + card_h // 2 - 5, radius=12, dot_size=3)
-            self.draw_text(self.t("msg_loading"), SCREEN_WIDTH // 2 - 35, spinner_card_y + card_h // 2 + 18, Colors.TEXT_TERTIARY, self.font_small)
+            self.draw_rect(10, spinner_card_y, self.screen_width - 20, card_h, Colors.BG_SECONDARY)
+            self.draw_spinner(self.screen_width // 2, spinner_card_y + card_h // 2 - 5, radius=12, dot_size=3)
+            self.draw_text(self.t("msg_loading"), self.screen_width // 2 - 35, spinner_card_y + card_h // 2 + 18, Colors.TEXT_TERTIARY, self.font_small)
         if len(videos) > base_visible:
             sb_h = height
             thumb = max(20, int(sb_h * visible / len(videos)))
             thumb_y = start_y + int((sb_h - thumb) * self.scroll / max(1, len(videos) - visible))
-            self.draw_rect(SCREEN_WIDTH - 8, start_y, 4, sb_h, Colors.PROGRESS_BG)
-            self.draw_rect(SCREEN_WIDTH - 8, thumb_y, 4, thumb, Colors.YT_RED)
+            self.draw_rect(self.screen_width - 8, start_y, 4, sb_h, Colors.PROGRESS_BG)
+            self.draw_rect(self.screen_width - 8, thumb_y, 4, thumb, Colors.YT_RED)
 
     def render_keyboard(self):
-        base_kb_y = SCREEN_HEIGHT - 260
+        base_kb_y = self.screen_height - 260
         num_rows = len(self.keyboard_layout)
         if num_rows > 4: base_kb_y -= (num_rows - 4) * 38
         kb_y = base_kb_y
-        self.draw_rect(0, kb_y - 45, SCREEN_WIDTH, SCREEN_HEIGHT - kb_y + 45, (0, 0, 0), 240)
+        self.draw_rect(0, kb_y - 45, self.screen_width, self.screen_height - kb_y + 45, (0, 0, 0), 240)
         input_y = kb_y - 38
-        self.draw_rect(15, input_y, SCREEN_WIDTH - 30, 32, Colors.BG_TERTIARY)
-        self.draw_rect(15, input_y, SCREEN_WIDTH - 30, 2, Colors.YT_RED)
+        self.draw_rect(15, input_y, self.screen_width - 30, 32, Colors.BG_TERTIARY)
+        self.draw_rect(15, input_y, self.screen_width - 30, 2, Colors.YT_RED)
         query = self.search_query or self.t("kb_search_placeholder")
         color = Colors.TEXT_PRIMARY if self.search_query else Colors.TEXT_TERTIARY
         display_query = query[:35]
@@ -1063,12 +1292,12 @@ class YouTubeApp:
                 else: new_layout.append([c.upper() for c in row])
             layout = new_layout
         max_keys, gap, side_margin = max(len(row) for row in layout), 4, 10
-        available_width = SCREEN_WIDTH - (2 * side_margin)
+        available_width = self.screen_width - (2 * side_margin)
         key_w = (available_width - (max_keys - 1) * gap) // max_keys
         key_h = 34
         for row_i, row in enumerate(layout):
             row_width = len(row) * key_w + (len(row) - 1) * gap
-            row_offset = (SCREEN_WIDTH - row_width) // 2
+            row_offset = (self.screen_width - row_width) // 2
             for col_i, char in enumerate(row):
                 x, y = row_offset + col_i * (key_w + gap), kb_y + row_i * (key_h + gap)
                 selected = self.keyboard_row == row_i and self.keyboard_col == col_i
@@ -1083,7 +1312,7 @@ class YouTubeApp:
         else:
             ctrls = [("ABC" if self.caps_lock else "abc", 55), (self.t("kb_space"), 180), ("<-", 55), (self.t("kb_go"), 80)]
         total_ctrl_w = sum(c[1] for c in ctrls) + gap * (len(ctrls) - 1)
-        ctrl_x = (SCREEN_WIDTH - total_ctrl_w) // 2
+        ctrl_x = (self.screen_width - total_ctrl_w) // 2
         for i, (label, w) in enumerate(ctrls):
             selected = self.keyboard_row == control_row_index and self.keyboard_col == i
             is_go_btn = (lang in ["Ukrainian", "Russian"] and i == 4) or (lang not in ["Ukrainian", "Russian"] and i == 3)
@@ -1248,7 +1477,14 @@ class YouTubeApp:
                 elif key in (SDLK_ESCAPE, SDLK_x): self.exit_confirm_active = False
                 self.need_redraw = True
             return
-
+        if self.credits_active:
+            if event.type == SDL_CONTROLLERBUTTONDOWN:
+                self.credits_active = False
+                self.need_redraw = True
+            elif event.type == SDL_KEYDOWN:
+                self.credits_active = False
+                self.need_redraw = True
+            return
         if self.search_active:
             if event.type == SDL_CONTROLLERBUTTONDOWN:
                 btn = event.cbutton.button
@@ -1292,16 +1528,17 @@ class YouTubeApp:
                 elif btn == SDL_CONTROLLER_BUTTON_Y: self.player_toggle_pause()
                 elif btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER: self.player_seek(-10)
                 elif btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: self.player_seek(10)
+                
                 elif btn == SDL_CONTROLLER_BUTTON_X:
-                    wv = self.get_mpv_property("width")
-                    hv = self.get_mpv_property("height")
+                    w = self.get_mpv_property("width")
+                    h = self.get_mpv_property("height")
                     fmt = self.get_mpv_property("video-format")
-                    
-                    if wv != "?" and hv != "?":
-                        msg = f"Res: {wv}x{hv} ({fmt})"
+                    if w != "?" and h != "?":
+                        msg = f"Res: {w}x{h} ({fmt})"
                         self.send_mpv_command(["show-text", msg, "3000"])
                     else:
                         self.send_mpv_command(["script-binding", "stats/display-stats-toggle"])
+
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_LEFT: self.player_seek(-5)
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_RIGHT: self.player_seek(5)
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_UP: self.player_brightness(5)
@@ -1391,13 +1628,17 @@ class YouTubeApp:
             elif key in (SDLK_ESCAPE, SDLK_x): self.action_back()
 
     def render(self):
-        self.draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Colors.BG_PRIMARY)
+        self.draw_rect(0, 0, self.screen_width, self.screen_height, Colors.BG_PRIMARY)
         self.render_header()
         
         if self.exit_confirm_active:
             self.render_content()
             self.render_navigation()
             self.render_exit_confirm()
+        elif self.credits_active:
+            self.render_content()
+            self.render_navigation()
+            self.render_credits_popup()
         elif self.search_active:
             self.render_keyboard()
         else:
@@ -1449,7 +1690,7 @@ if __name__ == "__main__":
     print(f"Script dir: {SCRIPT_DIR}")
     print(f"yt-dlp: {YTDLP_PATH}")
     print(f"Player: {VIDEO_PLAYER}")
-
+    
     if "APP_SCREEN_WIDTH" in os.environ:
         try:
             SCREEN_WIDTH = int(os.environ["APP_SCREEN_WIDTH"])
