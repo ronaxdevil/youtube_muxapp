@@ -2,7 +2,7 @@
 # HELP: MuTube
 # ICON: mutube
 # GRID: MuTube
-
+#
 
 # --- 1. Get Resolution from MUOS ---
 if [ -f /opt/muos/script/var/func.sh ]; then
@@ -24,6 +24,16 @@ export APP_SCREEN_HEIGHT="$HEIGHT"
 DIR="$(dirname "$0")"
 DATADIR="$DIR/data"
 
+# Keep user downloads separate from the app data and cache directories.
+export MUTUBE_DOWNLOAD_DIR="$DIR/downloads"
+mkdir -p "$MUTUBE_DOWNLOAD_DIR"
+
+# The bundled ARM64 FFmpeg merges YouTube's separate high-quality video and
+# audio tracks.  FAT-based SD cards do not retain executable permissions.
+if [ -f "$DATADIR/ffmpeg" ]; then
+  chmod +x "$DATADIR/ffmpeg"
+fi
+
 # --- 1. PortMaster Detection ---
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 
@@ -40,6 +50,7 @@ fi
 source $controlfolder/control.txt
 get_controls
 [ -f "${controlfolder}/mod_${CFW_NAME}.txt" ] && source "${controlfolder}/mod_${CFW_NAME}.txt"
+
 
 
 # --- 2. Exports & Library Setup ---
