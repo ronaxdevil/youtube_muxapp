@@ -1,3 +1,11 @@
 .vscode/settings.json
 MuTube.muxapp
 MuTube/
+outputs/
+downloads/
+data/__pycache__/
+data/*.pyc
+data/yt-dlp
+data/ffmpeg
+data/log.txt
+data/yt_settings.json

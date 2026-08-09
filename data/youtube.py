@@ -8,6 +8,10 @@ import hashlib
 import urllib.request
 import ssl
 import ctypes
+import shutil
+import re
+import tarfile
+import math
 from datetime import datetime
 
 # --- Setup Paths ---
@@ -484,10 +488,21 @@ class YouTubeApp:
         self.action_popup_active = False
         self.action_popup_selection = 0
         self.action_popup_video = None
+        self.file_details_active = False
+        self.file_details_video = None
         self.a_button_down_at = None
         self.is_playing = False
         self.is_loading_video = False
         self.is_downloading = False
+        self.is_updating = False
+        self.update_progress = 0
+        self.update_size_text = ""
+        self.update_label = ""
+        self.dependency_prompt_active = False
+        self.active_process = None
+        self.cancel_requested = False
+        self.download_progress = 0
+        self.download_size_text = ""
         self.is_searching = False
         self.player_process = None
         self.current_video = None
@@ -569,7 +584,7 @@ class YouTubeApp:
         except: pass
         return {
             "quality": "720p", "search_count": "10", "auto_load": "On",
-            "language": "English", "a_button_action": "Play"
+            "language": "English", "a_button_action": "Play", "media_target": "MMC"
         }
 
     def _save_settings(self):
@@ -593,6 +608,10 @@ class YouTubeApp:
             (tr["settings_search_count"], "search_count", ["10", "15", "20", "25"]),
             (tr["settings_auto_load"], "auto_load", on_off),
             ("A Button", "a_button_action", ["Play", "Download"]),
+            ("Media destination", "media_target", ["MMC", "SD Card"]),
+            ("Install / Update yt-dlp", "update_ytdlp", None),
+            ("Install / Update FFmpeg", "update_ffmpeg", None),
+            ("Install / Update both", "update_all", None),
             (tr.get("settings_refresh_home", "Refresh Home"), "refresh_home", None),
             (tr.get("settings_credits", "Credits"), "show_credits", None),
             (tr["settings_clear_favorites"], "clear_favorites", None),
@@ -836,7 +855,7 @@ class YouTubeApp:
         self.draw_rect(box_x, box_y, box_w, box_h, Colors.BG_SECONDARY)
         self.draw_rect(box_x, box_y, box_w, 2, Colors.YT_RED)
         self.draw_text("Choose action", box_x + 110, box_y + 18, Colors.TEXT_PRIMARY, self.font_large)
-        choices = ["Play", "Download 1080p", "Download 720p", "Download 480p", "Download 360p"]
+        choices = self._popup_choices()
         for index, choice in enumerate(choices):
             y = box_y + 62 + index * 40
             selected = index == self.action_popup_selection
@@ -844,6 +863,29 @@ class YouTubeApp:
             self.draw_text(choice, box_x + 40, y + 8, Colors.TEXT_PRIMARY if selected else Colors.TEXT_SECONDARY, self.font)
         help_text = "Up/Down: Select   A: Confirm   B: Cancel"
         self.draw_text(help_text, box_x + 22, box_y + box_h - 28, Colors.TEXT_TERTIARY, self.font_tiny)
+
+    def render_file_details_popup(self):
+        video = self.file_details_video
+        if not video: return
+        self.draw_rect(0, 0, self.screen_width, self.screen_height, (0, 0, 0), 180)
+        box_w, box_h = 500, 270
+        box_x, box_y = (self.screen_width - box_w) // 2, (self.screen_height - box_h) // 2
+        self.draw_rect(box_x, box_y, box_w, box_h, Colors.BG_SECONDARY)
+        self.draw_rect(box_x, box_y, box_w, 2, Colors.YT_RED)
+        path = video.url
+        try:
+            stat = os.stat(path)
+            size = f"{stat.st_size / (1024 * 1024):.1f} MB"
+            created = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
+        except:
+            size, created = "Unknown", "Unknown"
+        resolution = self._local_video_resolution(path)
+        fields = [("Name", os.path.basename(path)), ("Size", size), ("Resolution", resolution), ("Created", created), ("Path", path)]
+        self.draw_text("File details", box_x + 180, box_y + 18, Colors.TEXT_PRIMARY, self.font_large)
+        for index, (label, value) in enumerate(fields):
+            text = f"{label}: {value}"
+            self.draw_text(text[:58], box_x + 22, box_y + 64 + index * 30, Colors.TEXT_SECONDARY, self.font_small)
+        self.draw_text("[ A / B ] Back", box_x + 22, box_y + box_h - 28, Colors.YT_RED, self.font_tiny)
 
     def render_loading_screen(self, title="Loading...", subtitle=""):
         SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
@@ -861,17 +903,45 @@ class YouTubeApp:
         if subtitle:
             short_title = subtitle[:40] + "..." if len(subtitle) > 40 else subtitle
             self.draw_text(short_title, self.screen_width // 2 - len(short_title) * 4, self.screen_height // 2 + 20, Colors.TEXT_SECONDARY, self.font_small)
-        bar_width, bar_height = 200, 4
-        bar_x, bar_y = self.screen_width // 2 - bar_width // 2, self.screen_height // 2 + 60
-        self.draw_rect(bar_x, bar_y, bar_width, bar_height, Colors.PROGRESS_BG)
-        progress_width = 60
-        offset = (self.frame_count * 3) % (bar_width + progress_width)
-        start_x = bar_x + offset - progress_width
-        draw_start = bar_x if start_x < bar_x else start_x
-        draw_width = progress_width - (bar_x - start_x) if start_x < bar_x else min(progress_width, bar_x + bar_width - start_x)
-        if draw_width > 0 and draw_start < bar_x + bar_width: self.draw_rect(int(draw_start), bar_y, int(draw_width), bar_height, Colors.YT_RED)
+        # A compact circular loader avoids the old line-progress appearance
+        # while a video URL is being resolved.
+        cx, cy, radius = self.screen_width // 2, self.screen_height // 2 + 68, 12
+        phase = (self.frame_count // 3) % 12
+        for index in range(12):
+            angle = (index * 30) * 3.14159 / 180
+            x, y = int(cx + radius * math.cos(angle)), int(cy + radius * math.sin(angle))
+            color = Colors.YT_RED if index == phase else Colors.PROGRESS_BG
+            self.draw_rect(x - 2, y - 2, 4, 4, color)
+        self.draw_text("B: Back", self.screen_width // 2 - 22, cy + 26, Colors.TEXT_TERTIARY, self.font_tiny)
         SDL_RenderPresent(self.renderer)
         self.frame_count += 1
+
+    def render_download_progress(self, title, subtitle, percent, size_text=""):
+        SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
+        SDL_RenderClear(self.renderer)
+        self.draw_text(title, self.screen_width // 2 - len(title) * 5, self.screen_height // 2 - 52, Colors.TEXT_PRIMARY, self.font_large)
+        short = subtitle[:42] + "..." if len(subtitle) > 42 else subtitle
+        self.draw_text(short, self.screen_width // 2 - len(short) * 4, self.screen_height // 2 - 20, Colors.TEXT_SECONDARY, self.font_small)
+        bar_w, bar_h = 300, 16
+        bar_x, bar_y = self.screen_width // 2 - bar_w // 2, self.screen_height // 2 + 18
+        self.draw_rect(bar_x, bar_y, bar_w, bar_h, Colors.PROGRESS_BG)
+        self.draw_rect(bar_x, bar_y, int(bar_w * max(0, min(100, percent)) / 100), bar_h, Colors.YT_RED)
+        detail = f"{percent}%" + (f"  {size_text}" if size_text else "")
+        self.draw_text(detail, self.screen_width // 2 - len(detail) * 4, bar_y + 28, Colors.TEXT_PRIMARY, self.font_small)
+        self.draw_text("B: Cancel", self.screen_width // 2 - 28, bar_y + 54, Colors.TEXT_TERTIARY, self.font_tiny)
+        SDL_RenderPresent(self.renderer)
+        self.frame_count += 1
+
+    def render_dependency_prompt(self):
+        self.draw_rect(0, 0, self.screen_width, self.screen_height, Colors.BG_PRIMARY)
+        box_w, box_h = 520, 190
+        box_x, box_y = (self.screen_width - box_w) // 2, (self.screen_height - box_h) // 2
+        self.draw_rect(box_x, box_y, box_w, box_h, Colors.BG_SECONDARY)
+        self.draw_rect(box_x, box_y, box_w, 2, Colors.YT_RED)
+        self.draw_text("Download required components?", box_x + 95, box_y + 24, Colors.TEXT_PRIMARY, self.font_large)
+        self.draw_text("yt-dlp and FFmpeg are not included in MuTube.", box_x + 36, box_y + 68, Colors.TEXT_SECONDARY, self.font_small)
+        self.draw_text("A: Download now     B: Continue offline", box_x + 68, box_y + 128, Colors.YT_RED, self.font_small)
+        SDL_RenderPresent(self.renderer)
 
     def render_exit_confirm(self):
         self.draw_rect(0, 0, self.screen_width, self.screen_height, (0, 0, 0), 180)
@@ -1125,6 +1195,8 @@ class YouTubeApp:
         os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         self.current_video = video
         self.is_downloading = True
+        self.cancel_requested = False
+        self.download_progress, self.download_size_text = 0, ""
         self.status, self.status_type = "Downloading...", "loading"
         self.need_redraw = True
 
@@ -1150,6 +1222,8 @@ class YouTubeApp:
                     "--no-playlist",
                     "--no-check-certificates",
                     "--restrict-filenames",
+                    "--newline",
+                    "--progress-template", "download:%(progress._percent_str)s|%(progress._downloaded_bytes_str)s|%(progress._total_bytes_str)s",
                     "--print", "after_move:filepath",
                     "-f", format_str,
                     "-o", output_template,
@@ -1157,18 +1231,32 @@ class YouTubeApp:
                 ]
                 if FFMPEG_PATH:
                     cmd[1:1] = ["--ffmpeg-location", FFMPEG_PATH, "--merge-output-format", "mp4"]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
-                if result.returncode == 0:
-                    lines = result.stdout.strip().splitlines()
+                self.active_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                lines = []
+                for line in self.active_process.stdout:
+                    line = line.strip()
+                    if line.startswith("download:"):
+                        parts = line.split(":", 1)[1].split("|")
+                        try: self.download_progress = int(float(parts[0].replace("%", "").strip()))
+                        except: pass
+                        self.download_size_text = " / ".join(part.strip() for part in parts[1:] if part.strip())
+                    elif line: lines.append(line)
+                result_code = self.active_process.wait(timeout=1800)
+                self.active_process = None
+                if result_code == 0 and not self.cancel_requested:
+                    lines = [line for line in lines if not line.startswith("[download]")]
                     saved_path = lines[-1] if lines else ""
                     if saved_path: self._save_download_thumbnail(video, saved_path)
                     name = os.path.basename(saved_path) if saved_path else "complete"
                     self.status, self.status_type = f"Downloaded: {name}", "ok"
                 else:
-                    print("Download failed:", result.stderr)
-                    if "Too Many Requests" in result.stderr or "not a bot" in result.stderr:
+                    output = "\n".join(lines)
+                    print("Download failed:", output)
+                    if self.cancel_requested:
+                        self.status = "Download cancelled"
+                    elif "Too Many Requests" in output or "not a bot" in output:
                         self.status = "YouTube blocked request (429)"
-                    elif "JavaScript runtime" in result.stderr:
+                    elif "JavaScript runtime" in output:
                         self.status = "yt-dlp needs a JS runtime"
                     else:
                         self.status = "Download failed"
@@ -1179,6 +1267,7 @@ class YouTubeApp:
                 print(f"Download error: {e}")
                 self.status, self.status_type = "Download failed", "error"
             finally:
+                self.active_process = None
                 self.is_downloading = False
                 self.current_video = None
                 self.load_downloads()
@@ -1539,7 +1628,13 @@ class YouTubeApp:
         self.status, self.status_type, self.need_redraw = f"{label}: {options[idx]}", "ok", True
 
     def execute_setting_action(self, key):
-        if key == "refresh_home":
+        if key == "update_ytdlp":
+            self.update_dependencies(["yt-dlp"])
+        elif key == "update_ffmpeg":
+            self.update_dependencies(["ffmpeg"])
+        elif key == "update_all":
+            self.update_dependencies(["yt-dlp", "ffmpeg"])
+        elif key == "refresh_home":
             if self.ytdlp_path:
                 self.current_nav = NAV_HOME
                 self.selected = self.scroll = 0
@@ -1567,6 +1662,76 @@ class YouTubeApp:
         elif key == "show_credits":
             self.credits_active = True
         self.need_redraw = True
+
+    def _download_file(self, url, destination, label):
+        """Download one dependency while exposing a device-friendly progress value."""
+        request = urllib.request.Request(url, headers={"User-Agent": "MuTube/1.2"})
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        with urllib.request.urlopen(request, timeout=45, context=context) as response:
+            total = int(response.headers.get("Content-Length", "0") or 0)
+            received = 0
+            with open(destination, "wb") as output:
+                while True:
+                    if self.cancel_requested:
+                        raise RuntimeError("Update cancelled")
+                    block = response.read(64 * 1024)
+                    if not block: break
+                    output.write(block)
+                    received += len(block)
+                    self.update_label = label
+                    self.update_progress = int(received * 100 / total) if total else 0
+                    self.update_size_text = f"{received / (1024 * 1024):.1f} MB" + (f" / {total / (1024 * 1024):.1f} MB" if total else "")
+
+    def update_dependencies(self, requested):
+        if self.is_updating: return
+        self.is_updating, self.cancel_requested = True, False
+        self.update_progress, self.update_size_text = 0, ""
+        self.update_label = "Preparing update..."
+        self.need_redraw = True
+
+        def worker():
+            global YTDLP_PATH, FFMPEG_PATH
+            temp_files = []
+            try:
+                if "yt-dlp" in requested:
+                    target = os.path.join(SCRIPT_DIR, "yt-dlp")
+                    temporary = target + ".download"
+                    temp_files.append(temporary)
+                    self._download_file("https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64", temporary, "Downloading yt-dlp")
+                    os.replace(temporary, target)
+                    os.chmod(target, 0o755)
+                    YTDLP_PATH = self.ytdlp_path = find_ytdlp()
+                if "ffmpeg" in requested:
+                    archive = os.path.join(SCRIPT_DIR, "ffmpeg.download.tar.xz")
+                    temp_files.append(archive)
+                    self._download_file("https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz", archive, "Downloading FFmpeg")
+                    self.update_label, self.update_progress, self.update_size_text = "Installing FFmpeg", 100, ""
+                    with tarfile.open(archive, "r:xz") as bundle:
+                        member = next((item for item in bundle.getmembers() if item.name.endswith("/ffmpeg") and item.isfile()), None)
+                        if not member: raise RuntimeError("FFmpeg binary was not found in the archive")
+                        source = bundle.extractfile(member)
+                        if source is None: raise RuntimeError("Could not unpack FFmpeg")
+                        temporary = os.path.join(SCRIPT_DIR, "ffmpeg.download")
+                        temp_files.append(temporary)
+                        with open(temporary, "wb") as output: shutil.copyfileobj(source, output)
+                    os.replace(temporary, os.path.join(SCRIPT_DIR, "ffmpeg"))
+                    os.chmod(os.path.join(SCRIPT_DIR, "ffmpeg"), 0o755)
+                    FFMPEG_PATH = find_ffmpeg()
+                self.status, self.status_type = "Dependencies ready", "ok"
+            except Exception as exc:
+                print(f"Dependency update failed: {exc}")
+                self.status, self.status_type = f"Update failed: {str(exc)[:28]}", "error"
+            finally:
+                for path in temp_files:
+                    try:
+                        if os.path.exists(path): os.remove(path)
+                    except: pass
+                self.is_updating = False
+                self.dependency_prompt_active = False
+                self.need_redraw = True
+        threading.Thread(target=worker, daemon=True).start()
 
     def render_video_list(self, videos, start_y, height):
         card_h, margin, thumb_w, thumb_h = 80, 6, 142, 70
@@ -1835,6 +2000,56 @@ class YouTubeApp:
         self.action_popup_active = True
         self.need_redraw = True
 
+    def _popup_choices(self):
+        if self.action_popup_video and getattr(self.action_popup_video, "is_local", False):
+            return ["Play", "Delete", "Details", "Move to Media", "Copy to Media"]
+        return ["Play", "Download 1080p", "Download 720p", "Download 480p", "Download 360p"]
+
+    def _media_directory(self):
+        preferred = "/mnt/sdcard" if self.settings.get("media_target") == "SD Card" else "/mnt/mmc"
+        root = preferred if os.path.isdir(preferred) else "/mnt/mmc"
+        return os.path.join(root, "ROMS", "Media")
+
+    def _local_video_resolution(self, path):
+        if not FFMPEG_PATH: return "Unknown"
+        try:
+            probe = subprocess.run([FFMPEG_PATH, "-i", path], capture_output=True, text=True, timeout=12)
+            match = re.search(r"(\\d{3,5})x(\\d{3,5})", probe.stderr)
+            return f"{match.group(1)}x{match.group(2)}" if match else "Unknown"
+        except: return "Unknown"
+
+    def _transfer_local_video(self, video, move=False):
+        destination_dir = self._media_directory()
+        try:
+            os.makedirs(destination_dir, exist_ok=True)
+            destination = os.path.join(destination_dir, os.path.basename(video.url))
+            if os.path.exists(destination):
+                self.status, self.status_type = "File already exists in Media", "error"
+                return
+            if move: shutil.move(video.url, destination)
+            else: shutil.copy2(video.url, destination)
+            thumbnail = os.path.splitext(video.url)[0] + ".jpg"
+            if os.path.isfile(thumbnail):
+                thumb_destination = os.path.splitext(destination)[0] + ".jpg"
+                if move: shutil.move(thumbnail, thumb_destination)
+                else: shutil.copy2(thumbnail, thumb_destination)
+            self.status, self.status_type = ("Moved to Media" if move else "Copied to Media"), "ok"
+            self.load_downloads()
+        except Exception as e:
+            print(f"Media transfer error: {e}")
+            self.status, self.status_type = "Media transfer failed", "error"
+
+    def _delete_local_video(self, video):
+        try:
+            os.remove(video.url)
+            thumbnail = os.path.splitext(video.url)[0] + ".jpg"
+            if os.path.isfile(thumbnail): os.remove(thumbnail)
+            self.status, self.status_type = "Deleted", "ok"
+            self.load_downloads()
+        except Exception as e:
+            print(f"Delete error: {e}")
+            self.status, self.status_type = "Delete failed", "error"
+
     def confirm_action_popup(self):
         video = self.action_popup_video
         choice = self.action_popup_selection
@@ -1842,13 +2057,18 @@ class YouTubeApp:
         self.action_popup_video = None
         if not video:
             return
-        if choice == 0:
-            if getattr(video, "is_local", False): self.play_local_video(video)
-            else: self.play_video(video)
-        elif not getattr(video, "is_local", False):
-            self.download_video(video, ["1080p", "720p", "480p", "360p"][choice - 1])
+        if getattr(video, "is_local", False):
+            if choice == 0: self.play_local_video(video)
+            elif choice == 1: self._delete_local_video(video)
+            elif choice == 2:
+                self.file_details_video = video
+                self.file_details_active = True
+            elif choice == 3: self._transfer_local_video(video, move=True)
+            elif choice == 4: self._transfer_local_video(video, move=False)
+        elif choice == 0:
+            self.play_video(video)
         else:
-            self.status, self.status_type = "This video is already downloaded", "ok"
+            self.download_video(video, ["1080p", "720p", "480p", "360p"][choice - 1])
         self.need_redraw = True
 
     def process_repeat(self):
@@ -1863,7 +2083,28 @@ class YouTubeApp:
 
     def handle_event(self, event):
         now = SDL_GetTicks()
-        if self.is_loading_video or self.is_downloading: return
+        if self.is_loading_video or self.is_downloading or self.is_updating:
+            cancelled = ((event.type == SDL_CONTROLLERBUTTONDOWN and event.cbutton.button == SDL_CONTROLLER_BUTTON_B) or
+                         (event.type == SDL_KEYDOWN and event.key.keysym.sym in (SDLK_ESCAPE, SDLK_x)))
+            if cancelled:
+                self.cancel_requested = True
+                if self.active_process:
+                    try: self.active_process.terminate()
+                    except: pass
+                self.is_loading_video = self.is_downloading = False
+                self.status, self.status_type, self.need_redraw = "Cancelled", "ok", True
+            return
+
+        if self.dependency_prompt_active:
+            if event.type == SDL_CONTROLLERBUTTONDOWN:
+                if event.cbutton.button == SDL_CONTROLLER_BUTTON_A: self.update_dependencies(["yt-dlp", "ffmpeg"])
+                elif event.cbutton.button == SDL_CONTROLLER_BUTTON_B: self.dependency_prompt_active = False
+                self.need_redraw = True
+            elif event.type == SDL_KEYDOWN:
+                if event.key.keysym.sym in (SDLK_RETURN, SDLK_z): self.update_dependencies(["yt-dlp", "ffmpeg"])
+                elif event.key.keysym.sym in (SDLK_ESCAPE, SDLK_x): self.dependency_prompt_active = False
+                self.need_redraw = True
+            return
 
         if self.exit_confirm_active:
             if event.type == SDL_CONTROLLERBUTTONDOWN:
@@ -1893,13 +2134,25 @@ class YouTubeApp:
                 self.credits_active = False
                 self.need_redraw = True
             return
+        if self.file_details_active:
+            if event.type == SDL_CONTROLLERBUTTONDOWN:
+                if event.cbutton.button in (SDL_CONTROLLER_BUTTON_A, SDL_CONTROLLER_BUTTON_B):
+                    self.file_details_active = False
+                    self.file_details_video = None
+                    self.need_redraw = True
+            elif event.type == SDL_KEYDOWN:
+                if event.key.keysym.sym in (SDLK_RETURN, SDLK_z, SDLK_ESCAPE, SDLK_x):
+                    self.file_details_active = False
+                    self.file_details_video = None
+                    self.need_redraw = True
+            return
         if self.action_popup_active:
             if event.type == SDL_CONTROLLERBUTTONDOWN:
                 btn = event.cbutton.button
                 if btn == SDL_CONTROLLER_BUTTON_DPAD_UP:
-                    self.action_popup_selection = (self.action_popup_selection - 1) % 5
+                    self.action_popup_selection = (self.action_popup_selection - 1) % len(self._popup_choices())
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                    self.action_popup_selection = (self.action_popup_selection + 1) % 5
+                    self.action_popup_selection = (self.action_popup_selection + 1) % len(self._popup_choices())
                 elif btn == SDL_CONTROLLER_BUTTON_A:
                     self.confirm_action_popup()
                 elif btn == SDL_CONTROLLER_BUTTON_B:
@@ -1908,8 +2161,8 @@ class YouTubeApp:
                 self.need_redraw = True
             elif event.type == SDL_KEYDOWN:
                 key = event.key.keysym.sym
-                if key in (SDLK_UP, SDLK_w): self.action_popup_selection = (self.action_popup_selection - 1) % 5
-                elif key in (SDLK_DOWN, SDLK_s): self.action_popup_selection = (self.action_popup_selection + 1) % 5
+                if key in (SDLK_UP, SDLK_w): self.action_popup_selection = (self.action_popup_selection - 1) % len(self._popup_choices())
+                elif key in (SDLK_DOWN, SDLK_s): self.action_popup_selection = (self.action_popup_selection + 1) % len(self._popup_choices())
                 elif key in (SDLK_RETURN, SDLK_z): self.confirm_action_popup()
                 elif key in (SDLK_ESCAPE, SDLK_x):
                     self.action_popup_active = False
@@ -2070,6 +2323,10 @@ class YouTubeApp:
         self.draw_rect(0, 0, self.screen_width, self.screen_height, Colors.BG_PRIMARY)
         self.render_header()
         
+        if self.dependency_prompt_active:
+            self.render_dependency_prompt()
+            self.need_redraw = False
+            return
         if self.exit_confirm_active:
             self.render_content()
             self.render_navigation()
@@ -2082,6 +2339,10 @@ class YouTubeApp:
             self.render_content()
             self.render_navigation()
             self.render_action_popup()
+        elif self.file_details_active:
+            self.render_content()
+            self.render_navigation()
+            self.render_file_details_popup()
         elif self.search_active:
             self.render_keyboard()
         else:
@@ -2106,6 +2367,8 @@ class YouTubeApp:
             # The app remains useful without a network/downloader when it has
             # locally saved videos.
             self.show_downloads_offline()
+        if not self.ytdlp_path or not FFMPEG_PATH:
+            self.dependency_prompt_active = True
         event = SDL_Event()
         last_render_time = 0
         while self.running:
@@ -2117,7 +2380,8 @@ class YouTubeApp:
             self.process_repeat()
             current_time = SDL_GetTicks()
             if self.is_loading_video: self.render_loading_screen(self.t("msg_loading_video"), self.current_video.title if self.current_video else "")
-            elif self.is_downloading: self.render_loading_screen("Downloading...", self.current_video.title if self.current_video else "")
+            elif self.is_downloading: self.render_download_progress("Downloading...", self.current_video.title if self.current_video else "", self.download_progress, self.download_size_text)
+            elif self.is_updating: self.render_download_progress(self.update_label or "Updating...", "", self.update_progress, self.update_size_text)
             elif not self.is_playing:
                 is_batch_loading = self.home_batch_loading or self.search_batch_loading
                 force_render = (current_time - last_render_time) >= 100
