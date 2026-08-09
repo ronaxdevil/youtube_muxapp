@@ -18,6 +18,7 @@ DOWNLOAD_DIR = os.environ.get(
     "MUTUBE_DOWNLOAD_DIR",
     os.path.join(os.path.dirname(SCRIPT_DIR), "downloads")
 )
+MPV_LOG_PATH = os.path.join(SCRIPT_DIR, "log.txt")
 
 try:
     import sdl2
@@ -258,6 +259,7 @@ TRANSLATIONS = {
 
 LANGUAGES = ["English", "Espanol", "Francais", "Deutsch", "Portugues", "Turkce", "Russian", "Ukrainian"]
 NAV_HOME, NAV_SEARCH, NAV_FAVORITES, NAV_HISTORY, NAV_DOWNLOADS, NAV_SETTINGS = range(6)
+SEARCH_GENRES = ["Gaming", "Music", "Movies", "Trailers", "Sports", "News", "Technology", "Comedy", "Education"]
 
 def find_ytdlp():
     paths = [os.path.join(SCRIPT_DIR, "yt-dlp"), os.path.expanduser("~/.local/bin/yt-dlp")]
@@ -587,7 +589,7 @@ class YouTubeApp:
         on_off = [tr["settings_on"], tr["settings_off"]]
         self.settings_items = [
             (tr["settings_language"], "language", LANGUAGES),
-            (tr["settings_quality"], "quality", ["360p", "480p", "720p"]),
+            (tr["settings_quality"], "quality", ["360p", "480p", "720p", "1080p"]),
             (tr["settings_search_count"], "search_count", ["10", "15", "20", "25"]),
             (tr["settings_auto_load"], "auto_load", on_off),
             ("A Button", "a_button_action", ["Play", "Download"]),
@@ -828,13 +830,13 @@ class YouTubeApp:
 
     def render_action_popup(self):
         self.draw_rect(0, 0, self.screen_width, self.screen_height, (0, 0, 0), 180)
-        box_w, box_h = 360, 270
+        box_w, box_h = 360, 310
         box_x = (self.screen_width - box_w) // 2
         box_y = (self.screen_height - box_h) // 2
         self.draw_rect(box_x, box_y, box_w, box_h, Colors.BG_SECONDARY)
         self.draw_rect(box_x, box_y, box_w, 2, Colors.YT_RED)
         self.draw_text("Choose action", box_x + 110, box_y + 18, Colors.TEXT_PRIMARY, self.font_large)
-        choices = ["Play", "Download 720p", "Download 480p", "Download 360p"]
+        choices = ["Play", "Download 1080p", "Download 720p", "Download 480p", "Download 360p"]
         for index, choice in enumerate(choices):
             y = box_y + 62 + index * 40
             selected = index == self.action_popup_selection
@@ -967,7 +969,7 @@ class YouTubeApp:
                 self.mpv_socket = f"/tmp/mpv_{os.getpid()}"
                 
                 if player_name == "mpv":
-                    player_cmd = [player, "--fs", "--no-terminal", "--really-quiet", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500", "--cache=yes", "--demuxer-max-bytes=50M"]
+                    player_cmd = [player, "--fs", "--no-terminal", "--really-quiet", f"--log-file={MPV_LOG_PATH}", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500", "--cache=yes", "--demuxer-max-bytes=50M"]
                     if audio_url:
                         player_cmd.append(f"--audio-file={audio_url}")
                     player_cmd.append(video_url)
@@ -1035,7 +1037,7 @@ class YouTubeApp:
                 self.mpv_socket = f"/tmp/mpv_{os.getpid()}"
                 if player_name == "mpv":
                     player_cmd = [player, "--fs", "--no-terminal", "--really-quiet",
-                                  f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500",
+                                  f"--log-file={MPV_LOG_PATH}", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500",
                                   "--cache=yes", "--demuxer-max-bytes=50M", video.url]
                 elif player_name == "ffplay":
                     player_cmd = [player, "-fs", "-autoexit", "-noborder", "-framedrop", "-exitonkeydown", video.url]
@@ -1164,7 +1166,13 @@ class YouTubeApp:
                     self.status, self.status_type = f"Downloaded: {name}", "ok"
                 else:
                     print("Download failed:", result.stderr)
-                    self.status, self.status_type = "Download failed", "error"
+                    if "Too Many Requests" in result.stderr or "not a bot" in result.stderr:
+                        self.status = "YouTube blocked request (429)"
+                    elif "JavaScript runtime" in result.stderr:
+                        self.status = "yt-dlp needs a JS runtime"
+                    else:
+                        self.status = "Download failed"
+                    self.status_type = "error"
             except subprocess.TimeoutExpired:
                 self.status, self.status_type = "Download timed out", "error"
             except Exception as e:
@@ -1429,9 +1437,30 @@ class YouTubeApp:
         h = self.screen_height - 55 - 73
         if self.current_nav == NAV_SETTINGS: self.render_settings(y, h); return
         if self.is_searching: self.render_searching(y); return
+        if self.current_nav == NAV_SEARCH and not self.search_results:
+            self.render_genre_browser(y, h)
+            return
         videos = self._get_list()
         if videos: self.render_video_list(videos, y, h)
         else: self.render_empty(y)
+
+    def render_genre_browser(self, start_y, height):
+        self.draw_text("Browse YouTube genres", 20, start_y + 12, Colors.TEXT_PRIMARY, self.font_large)
+        self.draw_text("A: Today's trending   X: Text search", 20, start_y + 42, Colors.TEXT_TERTIARY, self.font_tiny)
+        columns, gap, margin = 3, 10, 16
+        button_w = (self.screen_width - margin * 2 - gap * (columns - 1)) // columns
+        button_h = 54
+        for index, genre in enumerate(SEARCH_GENRES):
+            row, col = divmod(index, columns)
+            x = margin + col * (button_w + gap)
+            y = start_y + 68 + row * (button_h + gap)
+            selected = index == self.selected
+            self.draw_rect(x, y, button_w, button_h, Colors.YT_RED if selected else Colors.CARD_BG)
+            if not selected:
+                self.draw_rect(x, y, button_w, 1, Colors.DIVIDER)
+                self.draw_rect(x, y + button_h - 1, button_w, 1, Colors.DIVIDER)
+            self.draw_text(genre, x + button_w // 2 - len(genre) * 4, y + 18,
+                           Colors.TEXT_PRIMARY if selected else Colors.TEXT_SECONDARY, self.font)
 
     def render_searching(self, y):
         msg = self.t("msg_searching")
@@ -1695,11 +1724,19 @@ class YouTubeApp:
         self.need_redraw = True
 
     def action_up(self):
+        if self.current_nav == NAV_SEARCH and not self.search_results and not self.search_active:
+            self.selected = max(0, self.selected - 3)
+            self.need_redraw = True
+            return
         if self.selected > 0:
             self.selected -= 1
             self.need_redraw = True
 
     def action_down(self):
+        if self.current_nav == NAV_SEARCH and not self.search_results and not self.search_active:
+            self.selected = min(len(SEARCH_GENRES) - 1, self.selected + 3)
+            self.need_redraw = True
+            return
         videos = self._get_list()
         if self.selected < len(videos) - 1:
             self.selected += 1
@@ -1707,14 +1744,21 @@ class YouTubeApp:
             self.check_load_next_batch()
 
     def action_left(self):
-        self.current_nav = (self.current_nav - 1) % 6
-        if self.current_nav == NAV_DOWNLOADS: self.load_downloads()
-        self.selected = self.scroll = 0
-        self.loading_spinner_triggered = False
-        self.need_redraw = True
+        if self.current_nav == NAV_SEARCH and not self.search_results and not self.search_active:
+            self.selected = max(0, self.selected - 1)
+            self.need_redraw = True
+            return
+        self.switch_tab(-1)
 
     def action_right(self):
-        self.current_nav = (self.current_nav + 1) % 6
+        if self.current_nav == NAV_SEARCH and not self.search_results and not self.search_active:
+            self.selected = min(len(SEARCH_GENRES) - 1, self.selected + 1)
+            self.need_redraw = True
+            return
+        self.switch_tab(1)
+
+    def switch_tab(self, direction):
+        self.current_nav = (self.current_nav + direction) % 6
         if self.current_nav == NAV_DOWNLOADS: self.load_downloads()
         self.selected = self.scroll = 0
         self.loading_spinner_triggered = False
@@ -1722,9 +1766,8 @@ class YouTubeApp:
 
     def action_select(self):
         if self.current_nav == NAV_SEARCH and not self.search_results:
-            self.search_active = True
-            self.search_query = ""
-            self.keyboard_row = self.keyboard_col = 0
+            genre = SEARCH_GENRES[min(self.selected, len(SEARCH_GENRES) - 1)]
+            self.search_youtube(f"{genre} trending videos today")
         else:
             videos = self._get_list()
             if videos and self.selected < len(videos):
@@ -1742,6 +1785,10 @@ class YouTubeApp:
             self.exit_confirm_active = False
             self.exit_confirm_selection = 0
         elif self.search_active: self.search_active = False
+        elif self.current_nav == NAV_SEARCH and self.search_results:
+            self.search_results = []
+            self.last_search_query = ""
+            self.selected = self.scroll = 0
         elif self.is_playing: self.stop_playback()
         else:
             self.exit_confirm_active = True
@@ -1799,7 +1846,7 @@ class YouTubeApp:
             if getattr(video, "is_local", False): self.play_local_video(video)
             else: self.play_video(video)
         elif not getattr(video, "is_local", False):
-            self.download_video(video, ["720p", "480p", "360p"][choice - 1])
+            self.download_video(video, ["1080p", "720p", "480p", "360p"][choice - 1])
         else:
             self.status, self.status_type = "This video is already downloaded", "ok"
         self.need_redraw = True
@@ -1850,9 +1897,9 @@ class YouTubeApp:
             if event.type == SDL_CONTROLLERBUTTONDOWN:
                 btn = event.cbutton.button
                 if btn == SDL_CONTROLLER_BUTTON_DPAD_UP:
-                    self.action_popup_selection = (self.action_popup_selection - 1) % 4
+                    self.action_popup_selection = (self.action_popup_selection - 1) % 5
                 elif btn == SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                    self.action_popup_selection = (self.action_popup_selection + 1) % 4
+                    self.action_popup_selection = (self.action_popup_selection + 1) % 5
                 elif btn == SDL_CONTROLLER_BUTTON_A:
                     self.confirm_action_popup()
                 elif btn == SDL_CONTROLLER_BUTTON_B:
@@ -1861,8 +1908,8 @@ class YouTubeApp:
                 self.need_redraw = True
             elif event.type == SDL_KEYDOWN:
                 key = event.key.keysym.sym
-                if key in (SDLK_UP, SDLK_w): self.action_popup_selection = (self.action_popup_selection - 1) % 4
-                elif key in (SDLK_DOWN, SDLK_s): self.action_popup_selection = (self.action_popup_selection + 1) % 4
+                if key in (SDLK_UP, SDLK_w): self.action_popup_selection = (self.action_popup_selection - 1) % 5
+                elif key in (SDLK_DOWN, SDLK_s): self.action_popup_selection = (self.action_popup_selection + 1) % 5
                 elif key in (SDLK_RETURN, SDLK_z): self.confirm_action_popup()
                 elif key in (SDLK_ESCAPE, SDLK_x):
                     self.action_popup_active = False
@@ -1947,8 +1994,8 @@ class YouTubeApp:
                     _, _, options = self.settings_items[self.settings_selected]
                     if options is None: self.action_right()
                     else: self.change_setting(1)
-                elif btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER: self.action_left()
-                elif btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: self.action_right()
+                elif btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER: self.switch_tab(-1)
+                elif btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: self.switch_tab(1)
                 return
 
             if btn == SDL_CONTROLLER_BUTTON_A:
@@ -1966,8 +2013,8 @@ class YouTubeApp:
                 self.key_held, self.key_hold_start = "down", now
             elif btn == SDL_CONTROLLER_BUTTON_DPAD_LEFT: self.action_left()
             elif btn == SDL_CONTROLLER_BUTTON_DPAD_RIGHT: self.action_right()
-            elif btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER: self.action_left()
-            elif btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: self.action_right()
+            elif btn == SDL_CONTROLLER_BUTTON_LEFTSHOULDER: self.switch_tab(-1)
+            elif btn == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: self.switch_tab(1)
             elif btn == SDL_CONTROLLER_BUTTON_START: self.download_selected()
         elif event.type == SDL_CONTROLLERBUTTONUP:
             if event.cbutton.button == SDL_CONTROLLER_BUTTON_A and self.a_button_down_at is not None:
