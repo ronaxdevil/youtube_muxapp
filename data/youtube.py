@@ -263,7 +263,7 @@ TRANSLATIONS = {
 
 LANGUAGES = ["English", "Espanol", "Francais", "Deutsch", "Portugues", "Turkce", "Russian", "Ukrainian"]
 NAV_HOME, NAV_SEARCH, NAV_FAVORITES, NAV_HISTORY, NAV_DOWNLOADS, NAV_SETTINGS = range(6)
-SEARCH_GENRES = ["Gaming", "Music", "Movies", "Trailers", "Sports", "News", "Technology", "Comedy", "Education"]
+SEARCH_GENRES = ["Gaming", "Music", "Movies", "Trailers", "Sports", "News", "Technology", "Comedy", "Education", "Live"]
 
 def find_ytdlp():
     paths = [os.path.join(SCRIPT_DIR, "yt-dlp"), os.path.expanduser("~/.local/bin/yt-dlp")]
@@ -642,12 +642,13 @@ class YouTubeApp:
         self.history.insert(0, video)
         self._save_json("yt_history.json", self.history)
 
-    def search_youtube(self, query):
+    def search_youtube(self, query, genre_search=False):
         if not self.ytdlp_path:
             self.status = "yt-dlp not found!"
             self.status_type = "error"
             return
         self.last_search_query = query
+        self.genre_search = genre_search
         self.search_batch = 1
         self.search_existing_ids = set()
         self.search_first_batch_count = 0
@@ -664,7 +665,7 @@ class YouTubeApp:
         self._load_batch("search", 1)
 
     def _load_batch(self, list_type, batch_num):
-        count = int(self.settings.get("search_count", "8"))
+        count = 50 if list_type == "search" and getattr(self, "genre_search", False) else int(self.settings.get("search_count", "10"))
         if list_type == "search":
             if self.search_batch_loading: return
             self.search_batch_loading = True
@@ -990,6 +991,7 @@ class YouTubeApp:
         self.add_to_history(video)
         self.current_video = video
         self.is_loading_video = True
+        self.cancel_requested = False
         self.status, self.status_type = "Loading video...", "loading"
         self.need_redraw = True
         self.render_loading_screen(self.t("msg_loading_video"), video.title)
@@ -1015,13 +1017,19 @@ class YouTubeApp:
                     video.url
                 ]
                 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                self.active_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                stdout, stderr = self.active_process.communicate(timeout=30)
+                result_code = self.active_process.returncode
+                self.active_process = None
                 
-                if result.returncode != 0:
+                if self.cancel_requested:
+                    self.status, self.status_type, self.is_loading_video, self.need_redraw = "Loading cancelled", "ok", False, True
+                    return
+                if result_code != 0:
                     self.status, self.status_type, self.is_loading_video, self.need_redraw = "Failed to get URL", "error", False, True
                     return
                 
-                urls = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+                urls = [line.strip() for line in stdout.split('\n') if line.strip()]
                 
                 if not urls:
                     self.status, self.status_type, self.is_loading_video, self.need_redraw = "No stream URL", "error", False, True
@@ -1030,6 +1038,11 @@ class YouTubeApp:
                 video_url = urls[0]
                 audio_url = urls[1] if len(urls) > 1 else None
                 
+                # B may have been pressed while yt-dlp was resolving streams.
+                # Never open a player after that cancellation.
+                if self.cancel_requested:
+                    self.status, self.status_type, self.is_loading_video, self.need_redraw = "Loading cancelled", "ok", False, True
+                    return
                 self.is_loading_video = False
                 SDL_HideWindow(self.window)
                 self.is_playing = True
@@ -1222,8 +1235,6 @@ class YouTubeApp:
                     "--no-playlist",
                     "--no-check-certificates",
                     "--restrict-filenames",
-                    "--newline",
-                    "--progress-template", "download:%(progress._percent_str)s|%(progress._downloaded_bytes_str)s|%(progress._total_bytes_str)s",
                     "--print", "after_move:filepath",
                     "-f", format_str,
                     "-o", output_template,
@@ -1235,12 +1246,7 @@ class YouTubeApp:
                 lines = []
                 for line in self.active_process.stdout:
                     line = line.strip()
-                    if line.startswith("download:"):
-                        parts = line.split(":", 1)[1].split("|")
-                        try: self.download_progress = int(float(parts[0].replace("%", "").strip()))
-                        except: pass
-                        self.download_size_text = " / ".join(part.strip() for part in parts[1:] if part.strip())
-                    elif line: lines.append(line)
+                    if line: lines.append(line)
                 result_code = self.active_process.wait(timeout=1800)
                 self.active_process = None
                 if result_code == 0 and not self.cancel_requested:
@@ -1932,7 +1938,7 @@ class YouTubeApp:
     def action_select(self):
         if self.current_nav == NAV_SEARCH and not self.search_results:
             genre = SEARCH_GENRES[min(self.selected, len(SEARCH_GENRES) - 1)]
-            self.search_youtube(f"{genre} trending videos today")
+            self.search_youtube(f"{genre} trending videos today", genre_search=True)
         else:
             videos = self._get_list()
             if videos and self.selected < len(videos):
@@ -2028,11 +2034,6 @@ class YouTubeApp:
                 return
             if move: shutil.move(video.url, destination)
             else: shutil.copy2(video.url, destination)
-            thumbnail = os.path.splitext(video.url)[0] + ".jpg"
-            if os.path.isfile(thumbnail):
-                thumb_destination = os.path.splitext(destination)[0] + ".jpg"
-                if move: shutil.move(thumbnail, thumb_destination)
-                else: shutil.copy2(thumbnail, thumb_destination)
             self.status, self.status_type = ("Moved to Media" if move else "Copied to Media"), "ok"
             self.load_downloads()
         except Exception as e:
@@ -2380,7 +2381,7 @@ class YouTubeApp:
             self.process_repeat()
             current_time = SDL_GetTicks()
             if self.is_loading_video: self.render_loading_screen(self.t("msg_loading_video"), self.current_video.title if self.current_video else "")
-            elif self.is_downloading: self.render_download_progress("Downloading...", self.current_video.title if self.current_video else "", self.download_progress, self.download_size_text)
+            elif self.is_downloading: self.render_loading_screen("Downloading...", self.current_video.title if self.current_video else "")
             elif self.is_updating: self.render_download_progress(self.update_label or "Updating...", "", self.update_progress, self.update_size_text)
             elif not self.is_playing:
                 is_batch_loading = self.home_batch_loading or self.search_batch_loading
