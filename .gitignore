@@ -1,6 +1,5 @@
 .vscode/settings.json
 MuTube.muxapp
-MuTube/
 outputs/
 downloads/
 data/__pycache__/

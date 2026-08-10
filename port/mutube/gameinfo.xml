@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gameList>
+  <game>
+    <path>./MuTube.sh</path>
+    <name>MuTube</name>
+    <desc>A YouTube browser and offline video player for handheld Linux devices.</desc>
+    <developer>Ronax</developer>
+    <publisher>Ronax</publisher>
+    <genre>Media</genre>
+    <image>./mutube/screenshot.png</image>
+  </game>
+</gameList>

@@ -1,0 +1,8 @@
+MuTube package notices
+
+MuTube uses Python SDL2 bindings and can download yt-dlp and FFmpeg at runtime.
+Those tools are not distributed in this archive. Their licences remain with
+their respective upstream projects.
+
+Before an upstream PortMaster submission, include the applicable licence files
+for every bundled third-party component and any bundled assets.

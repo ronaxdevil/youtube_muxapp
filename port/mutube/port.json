@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "name": "MuTube.zip",
+  "items": ["MuTube.sh", "mutube"],
+  "items_opt": null,
+  "attr": {
+    "title": "MuTube",
+    "desc": "A YouTube browser and offline video player for handheld Linux devices.",
+    "inst": "Ready to run. An internet connection is required to install yt-dlp and FFmpeg on first launch.",
+    "genres": ["utility", "media"],
+    "porter": ["ronaxdevil"],
+    "image": {},
+    "rtr": true,
+    "runtime": null,
+    "reqs": [],
+    "arch": ["aarch64", "armhf"]
+  }
+}

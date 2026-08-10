@@ -275,14 +275,20 @@ def find_ytdlp():
     return None
 
 def find_video_player():
-    players = ["mpv", "ffplay", "vlc", "mplayer"]
-    for player in players:
+    # Prefer MPV for its IPC controls and OSD. If it is unavailable, ffplay is
+    # a fully supported fallback on PortMaster and muOS.
+    for player in ["mpv"]:
         try:
             result = subprocess.run(["which", player], capture_output=True, text=True, timeout=5)
             if result.returncode == 0 and result.stdout.strip(): return player
         except: continue
-    pm_ffplay = "/opt/system/Tools/PortMaster/libs/ffplay"
-    if os.path.exists(pm_ffplay): return pm_ffplay
+    fallback = find_ffplay()
+    if fallback: return fallback
+    for player in ["vlc", "mplayer"]:
+        try:
+            result = subprocess.run(["which", player], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and result.stdout.strip(): return player
+        except: continue
     return None
 
 def find_ffplay():
@@ -584,7 +590,7 @@ class YouTubeApp:
         except: pass
         return {
             "quality": "720p", "search_count": "10", "auto_load": "On",
-            "language": "English", "a_button_action": "Play", "media_target": "MMC"
+            "language": "English", "a_button_action": "Play", "media_target": "MMC", "media_layout": "Automatic"
         }
 
     def _save_settings(self):
@@ -609,6 +615,7 @@ class YouTubeApp:
             (tr["settings_auto_load"], "auto_load", on_off),
             ("A Button", "a_button_action", ["Play", "Download"]),
             ("Media destination", "media_target", ["MMC", "SD Card"]),
+            ("Media layout", "media_layout", ["Automatic", "muOS", "EmulationStation", "Onion/Garlic/MinUI", "ArkOS"]),
             ("Install / Update yt-dlp", "update_ytdlp", None),
             ("Install / Update FFmpeg", "update_ffmpeg", None),
             ("Install / Update both", "update_all", None),
@@ -1052,7 +1059,7 @@ class YouTubeApp:
                 self.mpv_socket = f"/tmp/mpv_{os.getpid()}"
                 
                 if player_name == "mpv":
-                    player_cmd = [player, "--fs", "--no-terminal", "--really-quiet", f"--log-file={MPV_LOG_PATH}", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=1500", "--cache=yes", "--demuxer-max-bytes=50M"]
+                    player_cmd = [player, "--fs", "--no-terminal", "--really-quiet", f"--log-file={MPV_LOG_PATH}", f"--input-ipc-server={self.mpv_socket}", "--osd-level=1", "--osd-duration=3000", "--osd-bar", "--osd-bar-align-y=0.78", "--osd-bar-w=80", "--cache=yes", "--demuxer-max-bytes=50M"]
                     if audio_url:
                         player_cmd.append(f"--audio-file={audio_url}")
                     player_cmd.append(video_url)
@@ -1312,7 +1319,9 @@ class YouTubeApp:
         except: return False
 
     def player_seek(self, seconds):
-        if self.is_playing: self.send_mpv_command(["seek", str(seconds), "relative"])
+        if self.is_playing:
+            self.send_mpv_command(["seek", str(seconds), "relative"])
+            self.send_mpv_command(["show-progress"])
 
     def player_toggle_pause(self):
         if self.is_playing: self.send_mpv_command(["cycle", "pause"])
@@ -2011,10 +2020,34 @@ class YouTubeApp:
             return ["Play", "Delete", "Details", "Move to Media", "Copy to Media"]
         return ["Play", "Download 1080p", "Download 720p", "Download 480p", "Download 360p"]
 
-    def _media_directory(self):
-        preferred = "/mnt/sdcard" if self.settings.get("media_target") == "SD Card" else "/mnt/mmc"
-        root = preferred if os.path.isdir(preferred) else "/mnt/mmc"
-        return os.path.join(root, "ROMS", "Media")
+    def _media_locations(self):
+        """Return video and artwork folders for the selected CFW layout."""
+        layout = self.settings.get("media_layout", "Automatic")
+        cfw = os.environ.get("MUTUBE_CFW_NAME", "").lower()
+        if layout == "Automatic":
+            if "muos" in cfw or os.path.isdir("/mnt/mmc/MUOS"): layout = "muOS"
+            elif "arkos" in cfw: layout = "ArkOS"
+            elif any(name in cfw for name in ("onion", "garlic", "minui")): layout = "Onion/Garlic/MinUI"
+            else: layout = "EmulationStation"
+
+        if layout == "muOS":
+            preferred = "/mnt/sdcard" if self.settings.get("media_target") == "SD Card" else "/mnt/mmc"
+            root = preferred if os.path.isdir(preferred) else "/mnt/mmc"
+            return os.path.join(root, "ROMS", "Media"), os.path.join(root, "MUOS", "info", "catalogue", "Media", "box")
+
+        configured_root = os.environ.get("MUTUBE_ROMS_ROOT")
+        if configured_root:
+            rom_root = configured_root
+        else:
+            candidates = ["/roms", "/storage/roms", "/userdata/roms", "/mnt/SDCARD/Roms", "/mnt/sdcard/Roms"]
+            rom_root = next((path for path in candidates if os.path.isdir(path)), candidates[0])
+        media_dir = os.path.join(rom_root, "Media")
+        if layout == "Onion/Garlic/MinUI":
+            artwork_dir = os.path.join(media_dir, "Imgs")
+        else:
+            # Batocera, Knulli, ROCKNIX and ArkOS use images in the ROM folder.
+            artwork_dir = os.path.join(media_dir, "images")
+        return media_dir, artwork_dir
 
     def _local_video_resolution(self, path):
         if not FFMPEG_PATH: return "Unknown"
@@ -2025,7 +2058,7 @@ class YouTubeApp:
         except: return "Unknown"
 
     def _transfer_local_video(self, video, move=False):
-        destination_dir = self._media_directory()
+        destination_dir, artwork_dir = self._media_locations()
         try:
             os.makedirs(destination_dir, exist_ok=True)
             destination = os.path.join(destination_dir, os.path.basename(video.url))
@@ -2034,6 +2067,12 @@ class YouTubeApp:
                 return
             if move: shutil.move(video.url, destination)
             else: shutil.copy2(video.url, destination)
+            thumbnail = os.path.splitext(video.url)[0] + ".jpg"
+            if os.path.isfile(thumbnail):
+                os.makedirs(artwork_dir, exist_ok=True)
+                artwork = os.path.join(artwork_dir, os.path.splitext(os.path.basename(video.url))[0] + ".jpg")
+                if move: shutil.move(thumbnail, artwork)
+                else: shutil.copy2(thumbnail, artwork)
             self.status, self.status_type = ("Moved to Media" if move else "Copied to Media"), "ok"
             self.load_downloads()
         except Exception as e:
